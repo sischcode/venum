@@ -361,6 +361,8 @@ impl Value {
     /// NOTE: We decided agains Option<String> here as the type of the value since the intention is to create a typed version of a stringy-input we read from some CSV.
     ///       In that case, when a CSV column contains a "" as an entry, e.g. like this: `a,,c` or this `"a","","c"`, where the middle column would translate to empty / "",
     ///       we map it to a None internally, representing the absence of data.
+    /// NOTE2: For date types (NaiveDate, NaiveDateTime, DateTime) only the most common cases (iso8601_ymd, iso8601_ymdhms and rfc3339) have been implemented. Every other
+    ///        format _will_ error!
     pub fn from_string_with_templ(value: &str, templ_type: &Value) -> Result<Option<Value>> {
         if value == "" {
             return Ok(None);
