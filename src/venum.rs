@@ -1,9 +1,10 @@
-use crate::errors::{ParseError, Result, VenumError};
-use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime, TimeZone, Utc};
+use crate::errors::{ConversionError, ParseError, Result, VenumError};
+use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime};
 use rust_decimal::{prelude::FromPrimitive, Decimal};
 use std::convert::From;
+use strum_macros::Display; // used to generate names for the enum variants!
 
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[derive(Display, Debug, Clone, PartialEq, PartialOrd)]
 pub enum Value {
     String(String), // TODO: do we need Char(char) as well?
     Int8(i8),
@@ -26,9 +27,9 @@ pub enum Value {
 }
 
 macro_rules! impl_from_type_for_value {
-    ($enum_type:ident, $type:ty) => {
-        impl From<$type> for Value {
-            fn from(item: $type) -> Self {
+    ($enum_type:ident, $from_type:ty) => {
+        impl From<$from_type> for Value {
+            fn from(item: $from_type) -> Self {
                 Value::$enum_type(item)
             }
         }
@@ -53,45 +54,48 @@ impl_from_type_for_value!(NaiveDate, NaiveDate);
 impl_from_type_for_value!(NaiveDateTime, NaiveDateTime);
 impl_from_type_for_value!(DateTime, DateTime<FixedOffset>);
 
-macro_rules! impl_from_value_for_result {
-    ($enum_type:ident, $type:ty) => {
-        impl From<Value> for Result<$type> {
-            fn from(item: Value) -> Self {
+macro_rules! impl_try_from_value_for_type {
+    ($enum_type:ident, $for_type:ty) => {
+        impl TryFrom<Value> for $for_type {
+            type Error = VenumError;
+            fn try_from(item: Value) -> Result<Self> {
                 match item {
                     Value::$enum_type(v) => Ok(v),
-                    _ => Err(VenumError::Conversion(ParseError::UnwrapToBaseTypeFailed {
-                        src_value: format!("{:?}", item),
-                        basic_type: stringify!($type),
+                    _ => Err(VenumError::Conversion(ConversionError::WrongType {
+                        src_value: format!("{:?}", item), // i.e. Bool(true)
+                        src_type: format!("{item}"),      // i.e. Bool
+                        target_type: String::from(stringify!($for_type)),
+                        opt_info: None,
                     })),
                 }
             }
         }
     };
 }
-impl_from_value_for_result!(String, String);
-impl_from_value_for_result!(Int8, i8);
-impl_from_value_for_result!(Int16, i16);
-impl_from_value_for_result!(Int32, i32);
-impl_from_value_for_result!(Int64, i64);
-impl_from_value_for_result!(Int128, i128);
-impl_from_value_for_result!(UInt8, u8);
-impl_from_value_for_result!(UInt16, u16);
-impl_from_value_for_result!(UInt32, u32);
-impl_from_value_for_result!(UInt64, u64);
-impl_from_value_for_result!(UInt128, u128);
-impl_from_value_for_result!(Float32, f32);
-impl_from_value_for_result!(Float64, f64);
-impl_from_value_for_result!(Bool, bool);
-impl_from_value_for_result!(Decimal, Decimal);
-impl_from_value_for_result!(NaiveDate, NaiveDate);
-impl_from_value_for_result!(NaiveDateTime, NaiveDateTime);
-impl_from_value_for_result!(DateTime, DateTime<FixedOffset>);
+impl_try_from_value_for_type!(String, String);
+impl_try_from_value_for_type!(Int8, i8);
+impl_try_from_value_for_type!(Int16, i16);
+impl_try_from_value_for_type!(Int32, i32);
+impl_try_from_value_for_type!(Int64, i64);
+impl_try_from_value_for_type!(Int128, i128);
+impl_try_from_value_for_type!(UInt8, u8);
+impl_try_from_value_for_type!(UInt16, u16);
+impl_try_from_value_for_type!(UInt32, u32);
+impl_try_from_value_for_type!(UInt64, u64);
+impl_try_from_value_for_type!(UInt128, u128);
+impl_try_from_value_for_type!(Float32, f32);
+impl_try_from_value_for_type!(Float64, f64);
+impl_try_from_value_for_type!(Bool, bool);
+impl_try_from_value_for_type!(Decimal, Decimal);
+impl_try_from_value_for_type!(NaiveDate, NaiveDate);
+impl_try_from_value_for_type!(NaiveDateTime, NaiveDateTime);
+impl_try_from_value_for_type!(DateTime, DateTime<FixedOffset>);
 
 macro_rules! from_type_string {
-    ($fn_name:ident, $enum_type:ident, $type:ty) => {
+    ($fn_name:ident, $enum_type:ident, $for_type:ty) => {
         pub fn $fn_name(v: &str) -> Result<Value> {
-            let temp = v.parse::<$type>().map_err(|_| {
-                VenumError::Conversion(ParseError::ValueFromStringFailed {
+            let temp = v.parse::<$for_type>().map_err(|_| {
+                VenumError::Parsing(ParseError::ValueFromStringFailed {
                     src_value: v.to_string(),
                     target_type: stringify!($enum_type),
                     opt_info: None,
@@ -162,7 +166,7 @@ impl Value {
     from_type_string!(parse_bool_from_str, Bool, bool);
     pub fn parse_decimal_from_str(v: &str) -> Result<Value> {
         let temp = Decimal::from_str_exact(v).map_err(|oe| {
-            VenumError::Conversion(ParseError::ValueFromStringFailed {
+            VenumError::Parsing(ParseError::ValueFromStringFailed {
                 src_value: v.to_string(),
                 target_type: "Decimal",
                 opt_info: Some(format!("Original error: {oe}")),
@@ -174,7 +178,7 @@ impl Value {
     pub fn parse_naive_date_from_str(v: &str, chrono_pattern: &str) -> Result<Value> {
         // e.g pattern "%Y-%m-%d" to parse "2015-09-05"
         let temp = NaiveDate::parse_from_str(v, chrono_pattern).map_err(|oe| {
-            VenumError::Conversion(ParseError::ValueFromStringFailed {
+            VenumError::Parsing(ParseError::ValueFromStringFailed {
                 src_value: v.to_string(),
                 target_type: "NaiveDate",
                 opt_info: Some(format!(
@@ -188,7 +192,7 @@ impl Value {
         // e.g pattern "%F" (which is "%Y-%m-%d") to parse "2015-09-05"
         let chrono_pattern = "%F";
         let temp = NaiveDate::parse_from_str(v, chrono_pattern).map_err(|oe| {
-            VenumError::Conversion(ParseError::ValueFromStringFailed {
+            VenumError::Parsing(ParseError::ValueFromStringFailed {
                 src_value: v.to_string(),
                 target_type: "NaiveDate",
                 opt_info: Some(format!(
@@ -201,7 +205,7 @@ impl Value {
     pub fn parse_naive_date_time_from_str(v: &str, chrono_pattern: &str) -> Result<Value> {
         // e.g pattern "%F %T" (which is "%Y-%m-%d %H:%M:%S") to parse "2015-09-05 23:56:04"
         let temp = NaiveDateTime::parse_from_str(v, chrono_pattern).map_err(|oe| {
-            VenumError::Conversion(ParseError::ValueFromStringFailed {
+            VenumError::Parsing(ParseError::ValueFromStringFailed {
                 src_value: v.to_string(),
                 target_type: "NaiveDateTime",
                 opt_info: Some(format!(
@@ -215,7 +219,7 @@ impl Value {
         // e.g pattern "%F %T" (which is "%Y-%m-%d %H:%M:%S") to parse "2015-09-05 23:56:04"
         let chrono_pattern = "%F %T";
         let temp = NaiveDateTime::parse_from_str(v, chrono_pattern).map_err(|oe| {
-            VenumError::Conversion(ParseError::ValueFromStringFailed {
+            VenumError::Parsing(ParseError::ValueFromStringFailed {
                 src_value: v.to_string(),
                 target_type: "NaiveDateTime",
                 opt_info: Some(format!(
@@ -228,7 +232,7 @@ impl Value {
     pub fn parse_date_time_from_str(v: &str, chrono_pattern: &str) -> Result<Value> {
         // e.g pattern "%Y-%m-%d %H:%M:%S" to parse "2015-09-05 23:56:04"
         let temp = DateTime::parse_from_str(v, chrono_pattern).map_err(|oe| {
-            VenumError::Conversion(ParseError::ValueFromStringFailed {
+            VenumError::Parsing(ParseError::ValueFromStringFailed {
                 src_value: v.to_string(),
                 target_type: "DateTime",
                 opt_info: Some(format!(
@@ -241,7 +245,7 @@ impl Value {
     pub fn parse_date_time_from_str_rfc2822(v: &str) -> Result<Value> {
         // e.g date as: "Tue, 1 Jul 2003 10:52:37 +0200"
         let temp = DateTime::parse_from_rfc2822(v).map_err(|oe| {
-            VenumError::Conversion(ParseError::ValueFromStringFailed {
+            VenumError::Parsing(ParseError::ValueFromStringFailed {
                 src_value: v.to_string(),
                 target_type: "DateTime",
                 opt_info: Some(format!("Original error: {oe}")),
@@ -252,7 +256,7 @@ impl Value {
     pub fn parse_date_time_from_str_rfc3339(v: &str) -> Result<Value> {
         // e.g date as: "1996-12-19T16:39:57-08:00"
         let temp = DateTime::parse_from_rfc3339(v).map_err(|oe| {
-            VenumError::Conversion(ParseError::ValueFromStringFailed {
+            VenumError::Parsing(ParseError::ValueFromStringFailed {
                 src_value: v.to_string(),
                 target_type: "DateTime",
                 opt_info: Some(format!("Original error: {oe}")),
@@ -372,18 +376,7 @@ impl Value {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    // #[test]
-    // pub fn crhono() {
-    //     let nd: NaiveDate = NaiveDate::from_ymd(2016, 7, 8);
-    //     let ndt: NaiveDateTime = NaiveDate::from_ymd(2016, 7, 8).and_hms(9, 10, 11);
-
-    //     let dt = DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(61, 0), Utc);
-    //     let dt2 = FixedOffset::Utc.ymd(1970, 1, 1).and_hms(0, 1, 1);
-    //     assert_eq!(dt, dt2);
-
-    //     let rfc3339 = DateTime::parse_from_rfc3339("1970-01-01T00:00:00+00:00")?;
-    // }
+    use chrono::{FixedOffset, TimeZone};
 
     #[test]
     pub fn test_int8_from_str() {
@@ -431,7 +424,6 @@ mod tests {
     pub fn test_uint128_from_str() {
         assert_eq!(Ok(Value::UInt128(1)), Value::parse_uint128_from_str("1"));
     }
-
     #[test]
     pub fn test_float32_from_str() {
         assert_eq!(Ok(Value::Float32(1.0)), Value::parse_float32_from_str("1"));
@@ -440,18 +432,103 @@ mod tests {
     pub fn test_float64_from_str() {
         assert_eq!(Ok(Value::Float64(1.0)), Value::parse_float64_from_str("1"));
     }
-
     #[test]
     pub fn test_bool_from_str() {
         assert_eq!(Ok(Value::Bool(true)), Value::parse_bool_from_str("true"));
     }
-
     #[test]
     pub fn test_decimal_from_str() {
         assert_eq!(
             Ok(Value::Decimal(Decimal::new(1123, 3))),
             Value::parse_decimal_from_str("1.123")
         );
+    }
+
+    #[test]
+    pub fn test_naive_date_from_str_w_pattern() {
+        let exp = NaiveDate::from_ymd(2022, 12, 31);
+
+        assert_eq!(
+            Ok(Value::NaiveDate(exp)),
+            Value::parse_naive_date_from_str("2022-12-31", "%Y-%m-%d")
+        );
+        assert_eq!(
+            Ok(Value::NaiveDate(exp)),
+            Value::parse_naive_date_from_str("2022-12-31", "%F")
+        );
+    }
+    #[test]
+    pub fn test_naive_date_from_str_iso8601_ymd() {
+        let exp = NaiveDate::from_ymd(2022, 12, 31);
+
+        assert_eq!(
+            Ok(Value::NaiveDate(exp)),
+            Value::parse_naive_date_from_str_iso8601_ymd("2022-12-31")
+        );
+    }
+    #[test]
+    pub fn test_naive_date_time_from_str_w_pattern() {
+        let exp = NaiveDate::from_ymd(2022, 12, 31).and_hms(12, 11, 10);
+
+        assert_eq!(
+            Ok(Value::NaiveDateTime(exp)),
+            Value::parse_naive_date_time_from_str("2022-12-31 12:11:10", "%Y-%m-%d %H:%M:%S")
+        );
+        assert_eq!(
+            Ok(Value::NaiveDateTime(exp)),
+            Value::parse_naive_date_time_from_str("2022-12-31 12:11:10", "%F %T")
+        );
+    }
+    #[test]
+    pub fn test_naive_date_time_from_str_iso8601_ymdhms() {
+        let exp = NaiveDate::from_ymd(2022, 12, 31).and_hms(12, 11, 10);
+
+        assert_eq!(
+            Ok(Value::NaiveDateTime(exp)),
+            Value::parse_naive_date_time_from_str_iso8601_ymdhms("2022-12-31 12:11:10")
+        );
+    }
+    #[test]
+    pub fn test_date_time_from_str_w_pattern() {
+        let hour_secs = 3600;
+        let exp: DateTime<FixedOffset> = FixedOffset::east(5 * hour_secs) // east = +; west = -
+            .ymd(2022, 12, 31)
+            .and_hms(6, 0, 0);
+
+        let date_str = "2022-12-31T06:00:00+05:00";
+        let res = Value::parse_date_time_from_str(date_str, "%FT%T%:z");
+        assert_eq!(Ok(Value::DateTime(exp)), res);
+
+        let dt = DateTime::try_from(res.unwrap()).unwrap();
+        assert_eq!(dt.to_rfc3339(), String::from(date_str));
+    }
+    #[test]
+    pub fn test_date_time_from_str_rfc3339() {
+        let hour_secs = 3600;
+        let exp: DateTime<FixedOffset> = FixedOffset::east(5 * hour_secs) // east = +; west = -
+            .ymd(2022, 12, 31)
+            .and_hms(6, 0, 0);
+
+        let date_str = "2022-12-31T06:00:00+05:00";
+        let res = Value::parse_date_time_from_str_rfc3339(date_str);
+        assert_eq!(Ok(Value::DateTime(exp)), res);
+
+        let dt = DateTime::try_from(res.unwrap()).unwrap();
+        assert_eq!(dt.to_rfc3339(), String::from(date_str));
+    }
+    #[test]
+    pub fn test_date_time_from_str_rfc2822() {
+        let hour_secs = 3600;
+        let exp: DateTime<FixedOffset> = FixedOffset::east(2 * hour_secs) // east = +; west = -
+            .ymd(2003, 7, 1)
+            .and_hms(10, 52, 37);
+
+        let date_str = "Tue, 01 Jul 2003 10:52:37 +0200";
+        let res = Value::parse_date_time_from_str_rfc2822(date_str);
+        assert_eq!(Ok(Value::DateTime(exp)), res);
+
+        let dt = DateTime::try_from(res.unwrap()).unwrap();
+        assert_eq!(dt.to_rfc2822(), String::from(date_str));
     }
 
     #[test]
@@ -534,10 +611,13 @@ mod tests {
 
     #[test]
     pub fn string_to_bool_err() {
-        let res: Result<bool> = Value::String("test_data".into()).into();
-        let exp = Err(VenumError::Conversion(ParseError::UnwrapToBaseTypeFailed {
-            src_value: "String(\"test_data\")".into(),
-            basic_type: "bool",
+        let val_string = Value::String(String::from("test_data"));
+        let res = bool::try_from(val_string);
+        let exp = Err(VenumError::Conversion(ConversionError::WrongType {
+            src_value: String::from("String(\"test_data\")"),
+            src_type: String::from("String"),
+            target_type: String::from("bool"),
+            opt_info: None,
         }));
         assert_eq!(exp, res);
     }
@@ -552,7 +632,7 @@ mod tests {
     pub fn int8_from_str_and_templ_err() {
         let test = Value::from_string_with_templ("false", &Value::int8_default());
         assert_eq!(
-            Err(VenumError::Conversion(ParseError::ValueFromStringFailed {
+            Err(VenumError::Parsing(ParseError::ValueFromStringFailed {
                 src_value: "false".to_string(),
                 target_type: "Int8",
                 opt_info: None
