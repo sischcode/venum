@@ -20,17 +20,19 @@ impl Display for VenumError {
 
 #[derive(Error, Debug, PartialEq, Clone)]
 pub enum ParseError {
-    #[error("Can't construct Value::{target_type:?} from string '{src_value:?}'. Optional info: {opt_info:?}")]
+    #[error(
+        "Can't parse string '{src_value:?}' to construct a {target_type:?}. Optional info: {opt_info:?}"
+    )]
     ValueFromStringFailed {
         src_value: String,
-        target_type: &'static str,
+        target_type: String,
         opt_info: Option<String>,
     },
 }
 
 #[derive(Error, Debug, PartialEq, Clone)]
 pub enum ConversionError {
-    #[error("Can't convert {src_type:?} with value {src_value:?} to basic type {target_type:?}. Optional info: {opt_info:?}")]
+    #[error("Can't convert {src_type:?} with value {src_value:?} to target type {target_type:?}. Optional info: {opt_info:?}")]
     WrongType {
         src_value: String,
         src_type: String,
