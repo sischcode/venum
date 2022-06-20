@@ -1,2 +1,2 @@
-mod errors;
-mod venum;
+pub mod errors;
+pub mod venum;
