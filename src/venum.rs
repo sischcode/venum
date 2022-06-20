@@ -7,10 +7,10 @@ use rust_decimal::{prelude::FromPrimitive, Decimal};
 
 use strum_macros::Display; // used to generate names for the enum variants. Used only for error messages (as of now).
 
-static VAL_ENUM_NAME: &str = "Value::";
-static ENUM_VAR_ND: &str = "NaiveDate";
-static ENUM_VAR_NDT: &str = "NaiveDateTime";
-static ENUM_VAR_DT: &str = "DateTime";
+const VAL_ENUM_NAME: &str = "Value::";
+const ENUM_VAR_ND: &str = "NaiveDate";
+const ENUM_VAR_NDT: &str = "NaiveDateTime";
+const ENUM_VAR_DT: &str = "DateTime";
 
 #[derive(Display, Debug, Clone, PartialEq, PartialOrd)]
 pub enum Value {
