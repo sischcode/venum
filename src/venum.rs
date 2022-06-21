@@ -364,7 +364,7 @@ impl Value {
     /// NOTE2: For date types (NaiveDate, NaiveDateTime, DateTime) only the most common cases (iso8601_ymd, iso8601_ymdhms and rfc3339) have been implemented. Every other
     ///        format _will_ error!
     pub fn from_string_with_templ(value: &str, templ_type: &Value) -> Result<Option<Value>> {
-        if value == "" {
+        if value == "" || value.to_lowercase() == "null" {
             return Ok(None);
         }
         match templ_type {
@@ -395,6 +395,35 @@ impl Value {
             Value::DateTime(_) => Ok(Some(Value::parse_date_time_from_str_rfc3339(value)?)),
         }
     }
+
+    // pub fn datetype_from_string_with_templ_and_chrono_pattern(
+    //     value: &str,
+    //     templ_type: &Value,
+    //     chrono_pattern: &str,
+    // ) -> Result<Option<Value>> {
+    //     if value == "" || value.to_lowercase() == "null" {
+    //         return Ok(None);
+    //     }
+    //     match templ_type {
+    //         Value::NaiveDate(_) => Ok(Some(Value::parse_naive_date_from_str(
+    //             value,
+    //             chrono_pattern,
+    //         )?)),
+    //         Value::NaiveDateTime(_) => Ok(Some(Value::parse_naive_date_time_from_str(
+    //             value,
+    //             chrono_pattern,
+    //         )?)),
+    //         Value::DateTime(_) => Ok(Some(Value::parse_date_time_from_str(
+    //             value,
+    //             chrono_pattern,
+    //         )?)),
+    //         _ => Err(VenumError::Parsing(ParseError::ValueFromStringFailed {
+    //             src_value: String::from(value),
+    //             target_type: format!("{}{}", VAL_ENUM_NAME, templ_type),
+    //             opt_info: Some(format!("Chrono pattern: {chrono_pattern}")),
+    //         })),
+    //     }
+    // }
 }
 
 #[cfg(test)]
