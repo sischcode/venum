@@ -400,25 +400,20 @@ impl Value {
         self.is_naive_date() || self.is_naive_date_time() || self.is_date_time()
     }
 
-    pub fn is_some_int_type(&self) -> bool {
-        self.is_int8()
-            || self.is_int16()
-            || self.is_int32()
-            || self.is_int64()
-            || self.is_int128()
-            || self.is_uint8()
+    pub fn is_some_signed_int_type(&self) -> bool {
+        self.is_int8() || self.is_int16() || self.is_int32() || self.is_int64() || self.is_int128()
+    }
+
+    pub fn is_some_unsigned_int_type(&self) -> bool {
+        self.is_uint8()
             || self.is_uint16()
             || self.is_uint32()
             || self.is_uint64()
             || self.is_uint128()
     }
 
-    pub fn is_some_uint_type(&self) -> bool {
-        self.is_uint8()
-            || self.is_uint16()
-            || self.is_uint32()
-            || self.is_uint64()
-            || self.is_uint128()
+    pub fn is_some_int_type(&self) -> bool {
+        self.is_some_signed_int_type() || self.is_some_unsigned_int_type()
     }
 
     pub fn is_some_float_type(&self) -> bool {
