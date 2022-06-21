@@ -396,6 +396,35 @@ impl Value {
         }
     }
 
+    pub fn datetype_from_string_with_templ_and_chrono_pattern(
+        value: &str,
+        templ_type: &Value,
+        chrono_pattern: &str,
+    ) -> Result<Option<Value>> {
+        if value == "" || value.to_lowercase() == "null" {
+            return Ok(None);
+        }
+        match templ_type {
+            Value::NaiveDate(_) => Ok(Some(Value::parse_naive_date_from_str(
+                value,
+                chrono_pattern,
+            )?)),
+            Value::NaiveDateTime(_) => Ok(Some(Value::parse_naive_date_time_from_str(
+                value,
+                chrono_pattern,
+            )?)),
+            Value::DateTime(_) => Ok(Some(Value::parse_date_time_from_str(
+                value,
+                chrono_pattern,
+            )?)),
+            _ => Err(VenumError::Parsing(ParseError::ValueFromStringFailed {
+                src_value: String::from(value),
+                target_type: format!("{}{}", VAL_ENUM_NAME, templ_type),
+                opt_info: Some(format!("Chrono pattern: {chrono_pattern}")),
+            })),
+        }
+    }
+
     pub fn is_some_date_type(&self) -> bool {
         self.is_naive_date() || self.is_naive_date_time() || self.is_date_time()
     }
@@ -419,35 +448,6 @@ impl Value {
     pub fn is_some_float_type(&self) -> bool {
         self.is_float32() || self.is_float64()
     }
-
-    // pub fn datetype_from_string_with_templ_and_chrono_pattern(
-    //     value: &str,
-    //     templ_type: &Value,
-    //     chrono_pattern: &str,
-    // ) -> Result<Option<Value>> {
-    //     if value == "" || value.to_lowercase() == "null" {
-    //         return Ok(None);
-    //     }
-    //     match templ_type {
-    //         Value::NaiveDate(_) => Ok(Some(Value::parse_naive_date_from_str(
-    //             value,
-    //             chrono_pattern,
-    //         )?)),
-    //         Value::NaiveDateTime(_) => Ok(Some(Value::parse_naive_date_time_from_str(
-    //             value,
-    //             chrono_pattern,
-    //         )?)),
-    //         Value::DateTime(_) => Ok(Some(Value::parse_date_time_from_str(
-    //             value,
-    //             chrono_pattern,
-    //         )?)),
-    //         _ => Err(VenumError::Parsing(ParseError::ValueFromStringFailed {
-    //             src_value: String::from(value),
-    //             target_type: format!("{}{}", VAL_ENUM_NAME, templ_type),
-    //             opt_info: Some(format!("Chrono pattern: {chrono_pattern}")),
-    //         })),
-    //     }
-    // }
 }
 
 #[cfg(test)]
