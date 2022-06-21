@@ -396,6 +396,10 @@ impl Value {
         }
     }
 
+    pub fn is_date_type(&self) -> bool {
+        self.is_naive_date() || self.is_naive_date_time() || self.is_date_time()
+    }
+
     // pub fn datetype_from_string_with_templ_and_chrono_pattern(
     //     value: &str,
     //     templ_type: &Value,
