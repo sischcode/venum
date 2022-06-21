@@ -396,11 +396,11 @@ impl Value {
         }
     }
 
-    pub fn is_date_type(&self) -> bool {
+    pub fn is_some_date_type(&self) -> bool {
         self.is_naive_date() || self.is_naive_date_time() || self.is_date_time()
     }
 
-    pub fn is_int_type(&self) -> bool {
+    pub fn is_some_int_type(&self) -> bool {
         self.is_int8()
             || self.is_int16()
             || self.is_int32()
@@ -413,7 +413,7 @@ impl Value {
             || self.is_uint128()
     }
 
-    pub fn is_uint_type(&self) -> bool {
+    pub fn is_some_uint_type(&self) -> bool {
         self.is_uint8()
             || self.is_uint16()
             || self.is_uint32()
@@ -421,7 +421,7 @@ impl Value {
             || self.is_uint128()
     }
 
-    pub fn is_float_type(&self) -> bool {
+    pub fn is_some_float_type(&self) -> bool {
         self.is_float32() || self.is_float64()
     }
 
