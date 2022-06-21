@@ -161,7 +161,7 @@ impl Value {
         Value::NaiveDateTime(NaiveDate::from_ymd(1970, 1, 1).and_hms(0, 0, 0))
     }
 
-    // /// Default is: 1970-01-01 00:00:00 +00:00
+    /// Default is: 1970-01-01 00:00:00 +00:00 (formatted as: 1970-01-01T00:00:00+00:00)
     pub fn date_time_default() -> Value {
         Value::DateTime(DateTime::parse_from_rfc3339("1970-01-01T00:00:00+00:00").unwrap())
     }
