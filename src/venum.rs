@@ -244,7 +244,6 @@ impl Value {
         Ok(Value::NaiveDateTime(temp))
     }
     pub fn parse_date_time_from_str(v: &str, chrono_pattern: &str) -> Result<Value> {
-        // e.g pattern "%Y-%m-%d %H:%M:%S" to parse "2015-09-05 23:56:04"
         let temp = DateTime::parse_from_str(v, chrono_pattern).map_err(|oe| {
             VenumError::Parsing(ParseError::ValueFromStringFailed {
                 src_value: String::from(v),
