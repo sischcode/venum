@@ -400,6 +400,31 @@ impl Value {
         self.is_naive_date() || self.is_naive_date_time() || self.is_date_time()
     }
 
+    pub fn is_int_type(&self) -> bool {
+        self.is_int8()
+            || self.is_int16()
+            || self.is_int32()
+            || self.is_int64()
+            || self.is_int128()
+            || self.is_uint8()
+            || self.is_uint16()
+            || self.is_uint32()
+            || self.is_uint64()
+            || self.is_uint128()
+    }
+
+    pub fn is_uint_type(&self) -> bool {
+        self.is_uint8()
+            || self.is_uint16()
+            || self.is_uint32()
+            || self.is_uint64()
+            || self.is_uint128()
+    }
+
+    pub fn is_float_type(&self) -> bool {
+        self.is_float32() || self.is_float64()
+    }
+
     // pub fn datetype_from_string_with_templ_and_chrono_pattern(
     //     value: &str,
     //     templ_type: &Value,
