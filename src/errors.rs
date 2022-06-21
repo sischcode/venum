@@ -1,23 +1,14 @@
-use std::fmt::Display;
+use strum_macros::Display;
 use thiserror::Error;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Display)]
 pub enum VenumError {
     Generic { msg: String },
     Parsing(ParseError),
     Conversion(ConversionError),
 }
 
-impl Display for VenumError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            VenumError::Generic { msg } => write!(f, "An error occurred: {:?}", msg),
-            VenumError::Parsing(ce) => ce.fmt(f),
-            VenumError::Conversion(pe) => pe.fmt(f),
-        }
-    }
-}
-
+// The Error derive also implements the Display trait!
 #[derive(Error, Debug, PartialEq, Clone)]
 pub enum ParseError {
     #[error(
@@ -30,6 +21,7 @@ pub enum ParseError {
     },
 }
 
+// The Error derive also implements the Display trait!
 #[derive(Error, Debug, PartialEq, Clone)]
 pub enum ConversionError {
     #[error("Can't convert {src_type:?} with value {src_value:?} to target type {target_type:?}. Optional info: {opt_info:?}")]
