@@ -449,11 +449,6 @@ impl Value {
     }
 }
 
-pub trait SplitValue {
-    fn split(&self, src: &Option<Value>) -> Result<(Option<Value>, Option<Value>)>;
-    fn split_none(&self) -> bool;
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
