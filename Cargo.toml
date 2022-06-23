@@ -2,7 +2,10 @@
 name = "venum"
 version = "0.1.0"
 authors = ["Joerg Sischka <sischcode@gmx.net>"]
+readme = "README.md"
+keywords = ["venum", "rust", "enum", "dynamic typing", "serialization", "deserialization", "parsing"]
 edition = "2021"
+rust-version = "1.61"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
