@@ -449,6 +449,12 @@ impl Value {
     }
 }
 
+impl Default for Value {
+    fn default() -> Self {
+        Value::Bool(false)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
