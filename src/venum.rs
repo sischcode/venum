@@ -315,8 +315,8 @@ impl Value {
     pub fn decimal_from_f32(v: f32) -> Value {
         Value::Decimal(Decimal::from_f32(v).unwrap()) // I can't think of a case where a f32 cannot be represented by a decimal
     }
-    pub fn decimal_from_f64(v: i64) -> Value {
-        Value::Decimal(Decimal::from_i64(v).unwrap()) // I can't think of a case where a f64 cannot be represented by a decimal
+    pub fn decimal_from_f64(v: f64) -> Value {
+        Value::Decimal(Decimal::from_f64(v).unwrap()) // I can't think of a case where a f64 cannot be represented by a decimal
     }
 
     is_type!(is_char, Char);
