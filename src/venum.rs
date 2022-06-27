@@ -14,7 +14,7 @@ const ENUM_VAR_DT: &str = "DateTime";
 
 #[derive(Display, Debug, Clone, PartialEq, PartialOrd)]
 pub enum Value {
-    // TODO: do we need Char(char) as well?
+    Char(char),
     String(String),
     Int8(i8),
     Int16(i16),
@@ -44,6 +44,7 @@ macro_rules! impl_from_type_for_value {
         }
     };
 }
+impl_from_type_for_value!(Char, char);
 impl_from_type_for_value!(String, String);
 impl_from_type_for_value!(Int8, i8);
 impl_from_type_for_value!(Int16, i16);
@@ -81,6 +82,7 @@ macro_rules! impl_try_from_value_for_type {
         }
     };
 }
+impl_try_from_value_for_type!(Char, char);
 impl_try_from_value_for_type!(String, String);
 impl_try_from_value_for_type!(Int8, i8);
 impl_try_from_value_for_type!(Int16, i16);
@@ -135,6 +137,7 @@ macro_rules! is_type {
 }
 
 impl Value {
+    type_defaults!(char_default, Char, char);
     type_defaults!(string_default, String, String);
     type_defaults!(int8_default, Int8, i8);
     type_defaults!(int16_default, Int16, i16);
@@ -166,6 +169,7 @@ impl Value {
         Value::DateTime(DateTime::parse_from_rfc3339("1970-01-01T00:00:00+00:00").unwrap())
     }
 
+    from_type_string!(parse_char_from_str, Char, char);
     from_type_string!(parse_int8_from_str, Int8, i8);
     from_type_string!(parse_int16_from_str, Int16, i16);
     from_type_string!(parse_int32_from_str, Int32, i32);
@@ -315,6 +319,7 @@ impl Value {
         Value::Decimal(Decimal::from_i64(v).unwrap()) // I can't think of a case where a f64 cannot be represented by a decimal
     }
 
+    is_type!(is_char, Char);
     is_type!(is_string, String);
     is_type!(is_int8, Int8);
     is_type!(is_int16, Int16);
@@ -336,6 +341,7 @@ impl Value {
 
     pub fn get_default_of_self_variant(&self) -> Value {
         match self {
+            Value::Char(_) => Value::char_default(),
             Value::String(_) => Value::string_default(),
             Value::Int8(_) => Value::int8_default(),
             Value::Int16(_) => Value::int16_default(),
@@ -367,7 +373,8 @@ impl Value {
             return Ok(None);
         }
         match templ_type {
-            Value::String(_) => Ok(Some(Value::String(value.into()))), // even a string value of "" will be a real value, since it's not explicitly None (...i.e. coming from a "null")
+            Value::Char(_) => Ok(Some(Value::parse_char_from_str(value)?)),
+            Value::String(_) => Ok(Some(Value::String(value.into()))),
 
             Value::Int8(_) => Ok(Some(Value::parse_int8_from_str(value)?)),
             Value::Int16(_) => Ok(Some(Value::parse_int16_from_str(value)?)),
@@ -454,6 +461,8 @@ impl Default for Value {
         Value::Bool(false)
     }
 }
+
+pub type OptValue = Option<Value>;
 
 #[cfg(test)]
 mod tests {
@@ -573,6 +582,19 @@ mod tests {
     )]
     pub fn test_parse_bool_from_str_err() {
         Value::parse_bool_from_str("foobar").unwrap();
+    }
+
+    #[test]
+    pub fn test_parse_char_from_str() {
+        assert_eq!(Ok(Value::Char('a')), Value::parse_char_from_str("a"));
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "Err(Parsing(ValueFromStringFailed { src_value: \"abc\", target_type: \"Value::Char\", opt_info: None }))"
+    )]
+    pub fn test_parse_char_from_str_err() {
+        assert_eq!(Ok(Value::Char('a')), Value::parse_char_from_str("abc"));
     }
 
     // ----------------------------------------------------------------------------------------------------------------------------------------
@@ -748,6 +770,11 @@ mod tests {
     // --------------------------------------- Testing that the default values are the expected ones ------------------------------------------
     // ----------------------------------------------------------------------------------------------------------------------------------------
     #[test]
+    pub fn test_char_default() {
+        assert_eq!(Value::Char('\0'), Value::char_default());
+    }
+
+    #[test]
     pub fn test_string_default() {
         assert_eq!(Value::String("".to_string()), Value::string_default());
     }
@@ -859,6 +886,8 @@ mod tests {
             Value::from(String::from("foobar"))
         );
 
+        assert_eq!(Value::Char('a'), Value::from('a'));
+
         assert_eq!(Value::Int8(0), Value::from(0i8));
         assert_eq!(Value::Int16(0), Value::from(0i16));
         assert_eq!(Value::Int32(0), Value::from(0i32));
@@ -902,6 +931,8 @@ mod tests {
             String::from("foobar"),
             String::try_from(Value::String(String::from("foobar"))).unwrap()
         );
+
+        assert_eq!('a', char::try_from(Value::Char('a')).unwrap());
 
         assert_eq!(0i8, i8::try_from(Value::Int8(0i8)).unwrap());
         assert_eq!(0i16, i16::try_from(Value::Int16(0i16)).unwrap());
