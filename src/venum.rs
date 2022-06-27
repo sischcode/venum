@@ -467,532 +467,550 @@ pub type OptValue = Option<Value>;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::{FixedOffset, TimeZone};
 
-    // ----------------------------------------------------------------------------------------------------------------------------------------
-    // --------------------------- from_type_string (i.e. all parse_*_from_str functions, except Decimal and Dates) ---------------------------
-    // ----------------------------------------------------------------------------------------------------------------------------------------
-    #[test]
-    pub fn test_parse_int8_from_str() {
-        assert_eq!(Ok(Value::Int8(-1)), Value::parse_int8_from_str("-1"));
+    mod parse_from_str {
+        use super::*;
+
+        #[test]
+        pub fn test_parse_int8_from_str() {
+            assert_eq!(Ok(Value::Int8(-1)), Value::parse_int8_from_str("-1"));
+        }
+
+        #[test]
+        pub fn test_parse_int16_from_str() {
+            assert_eq!(Ok(Value::Int16(-1)), Value::parse_int16_from_str("-1"));
+        }
+
+        #[test]
+        pub fn test_parse_int32_from_str() {
+            assert_eq!(Ok(Value::Int32(-1)), Value::parse_int32_from_str("-1"));
+        }
+
+        #[test]
+        pub fn test_parse_int32_from_str_err() {
+            let err_res = Value::parse_int32_from_str("foobar");
+
+            let exp = Err(VenumError::Parsing(ParseError::ValueFromStringFailed {
+                src_value: String::from("foobar"),
+                target_type: String::from("Value::Int32"),
+                opt_info: None,
+            }));
+            assert_eq!(exp, err_res);
+        }
+
+        #[test]
+        pub fn test_parse_int64_from_str() {
+            assert_eq!(Ok(Value::Int64(-1)), Value::parse_int64_from_str("-1"));
+        }
+
+        #[test]
+        pub fn test_parse_int128_from_str() {
+            assert_eq!(Ok(Value::Int128(-1)), Value::parse_int128_from_str("-1"));
+        }
+
+        #[test]
+        pub fn test_parse_uint8_from_str() {
+            assert_eq!(
+                Ok(Value::UInt8(1)),
+                Value::parse_uint8_from_str(&String::from("1"))
+            );
+        }
+
+        #[test]
+        pub fn test_parse_uint16_from_str() {
+            assert_eq!(Ok(Value::UInt16(1)), Value::parse_uint16_from_str("1"));
+        }
+
+        #[test]
+        pub fn test_parse_uint32_from_str() {
+            assert_eq!(Ok(Value::UInt32(1)), Value::parse_uint32_from_str("1"));
+        }
+
+        #[test]
+        pub fn test_parse_uint64_from_str() {
+            assert_eq!(Ok(Value::UInt64(1)), Value::parse_uint64_from_str("1"));
+        }
+
+        #[test]
+        pub fn test_parse_uint128_from_str() {
+            assert_eq!(Ok(Value::UInt128(1)), Value::parse_uint128_from_str("1"));
+        }
+
+        #[test]
+        pub fn test_parse_float32_from_str() {
+            assert_eq!(Ok(Value::Float32(1.0)), Value::parse_float32_from_str("1"));
+        }
+
+        #[test]
+        pub fn test_parse_float64_from_str() {
+            assert_eq!(Ok(Value::Float64(1.0)), Value::parse_float64_from_str("1"));
+        }
+
+        #[test]
+        pub fn test_parse_bool_from_str() {
+            assert_eq!(Ok(Value::Bool(true)), Value::parse_bool_from_str("true"));
+        }
+
+        #[test]
+        #[should_panic(
+            expected = "Parsing(ValueFromStringFailed { src_value: \"1.123\", target_type: \"Value::Int32\", opt_info: None })"
+        )]
+        pub fn test_parse_i32_from_str_err() {
+            Value::parse_int32_from_str("1.123").unwrap();
+        }
+
+        #[test]
+        #[should_panic(
+            expected = "Parsing(ValueFromStringFailed { src_value: \"1.123\", target_type: \"Value::UInt32\", opt_info: None })"
+        )]
+        pub fn test_parse_u32_from_str_err() {
+            Value::parse_uint32_from_str("1.123").unwrap();
+        }
+
+        #[test]
+        #[should_panic(
+            expected = "Parsing(ValueFromStringFailed { src_value: \"foobar\", target_type: \"Value::Float32\", opt_info: None })"
+        )]
+        pub fn test_parse_f32_from_str_err() {
+            Value::parse_float32_from_str("foobar").unwrap();
+        }
+
+        #[test]
+        #[should_panic(
+            expected = "Parsing(ValueFromStringFailed { src_value: \"foobar\", target_type: \"Value::Bool\", opt_info: None })"
+        )]
+        pub fn test_parse_bool_from_str_err() {
+            Value::parse_bool_from_str("foobar").unwrap();
+        }
+
+        #[test]
+        pub fn test_parse_char_from_str() {
+            assert_eq!(Ok(Value::Char('a')), Value::parse_char_from_str("a"));
+        }
+
+        #[test]
+        #[should_panic(
+            expected = "Err(Parsing(ValueFromStringFailed { src_value: \"abc\", target_type: \"Value::Char\", opt_info: None }))"
+        )]
+        pub fn test_parse_char_from_str_err() {
+            assert_eq!(Ok(Value::Char('a')), Value::parse_char_from_str("abc"));
+        }
     }
 
-    #[test]
-    pub fn test_parse_int16_from_str() {
-        assert_eq!(Ok(Value::Int16(-1)), Value::parse_int16_from_str("-1"));
+    mod parse_from_str_decimal {
+        use rust_decimal::Decimal;
+
+        use crate::venum::Value;
+
+        #[test]
+        pub fn test_parse_decimal_from_str() {
+            assert_eq!(
+                Ok(Value::Decimal(Decimal::new(1123, 3))),
+                Value::parse_decimal_from_str("1.123")
+            );
+        }
+
+        #[test]
+        #[should_panic(
+            expected = "Parsing(ValueFromStringFailed { src_value: \"foobar\", target_type: \"Value::Decimal\", opt_info: Some(\"Original error: Invalid decimal: unknown character\") })"
+        )]
+        pub fn test_parse_decimal_from_str_err() {
+            Value::parse_decimal_from_str("foobar").unwrap();
+        }
     }
 
-    #[test]
-    pub fn test_parse_int32_from_str() {
-        assert_eq!(Ok(Value::Int32(-1)), Value::parse_int32_from_str("-1"));
+    mod parse_from_str_date {
+        use chrono::{DateTime, FixedOffset, NaiveDate, TimeZone};
+
+        use crate::venum::Value;
+
+        #[test]
+        pub fn test_parse_naive_date_from_str_w_pattern() {
+            let exp = NaiveDate::from_ymd(2022, 12, 31);
+
+            assert_eq!(
+                Ok(Value::NaiveDate(exp)),
+                Value::parse_naive_date_from_str("2022-12-31", "%Y-%m-%d")
+            );
+            assert_eq!(
+                Ok(Value::NaiveDate(exp)),
+                Value::parse_naive_date_from_str("2022-12-31", "%F")
+            );
+        }
+
+        #[test]
+        #[should_panic(
+            expected = "Parsing(ValueFromStringFailed { src_value: \"2022-12-31 00:00\", target_type: \"Value::NaiveDate\", opt_info: Some(\"Chrono pattern: %Y-%m-%d. Original error: trailing input\") })"
+        )]
+        pub fn test_parse_naive_date_from_str_w_pattern_err_trailing_inp() {
+            Value::parse_naive_date_from_str("2022-12-31 00:00", "%Y-%m-%d").unwrap();
+        }
+
+        #[test]
+        #[should_panic(
+            expected = "Parsing(ValueFromStringFailed { src_value: \"2022-12-31\", target_type: \"Value::NaiveDate\", opt_info: Some(\"Chrono pattern: %Y %m %d. Original error: input contains invalid characters\") })"
+        )]
+        pub fn test_parse_naive_date_from_str_w_pattern_err_invalid_chars() {
+            Value::parse_naive_date_from_str("2022-12-31", "%Y %m %d").unwrap();
+        }
+
+        #[test]
+        pub fn test_parse_naive_date_from_str_iso8601_ymd() {
+            let exp = NaiveDate::from_ymd(2022, 12, 31);
+
+            assert_eq!(
+                Ok(Value::NaiveDate(exp)),
+                Value::parse_naive_date_from_str_iso8601_ymd("2022-12-31")
+            );
+        }
+
+        #[test]
+        pub fn test_parse_naive_date_time_from_str_w_pattern() {
+            let exp = NaiveDate::from_ymd(2022, 12, 31).and_hms(12, 11, 10);
+
+            assert_eq!(
+                Ok(Value::NaiveDateTime(exp)),
+                Value::parse_naive_date_time_from_str("2022-12-31 12:11:10", "%Y-%m-%d %H:%M:%S")
+            );
+            assert_eq!(
+                Ok(Value::NaiveDateTime(exp)),
+                Value::parse_naive_date_time_from_str("2022-12-31 12:11:10", "%F %T")
+            );
+        }
+
+        #[test]
+        #[should_panic(
+            expected = "Parsing(ValueFromStringFailed { src_value: \"2022-12-31 12:11:10 000\", target_type: \"Value::NaiveDateTime\", opt_info: Some(\"Chrono pattern: %Y-%m-%d %H:%M:%S. Original error: trailing input\") }"
+        )]
+        pub fn test_parse_naive_date_time_from_str_w_pattern_err_trailing_inp() {
+            Value::parse_naive_date_time_from_str("2022-12-31 12:11:10 000", "%Y-%m-%d %H:%M:%S")
+                .unwrap();
+        }
+
+        #[test]
+        #[should_panic(
+            expected = "Parsing(ValueFromStringFailed { src_value: \"2022-12-31 12:11:10\", target_type: \"Value::NaiveDateTime\", opt_info: Some(\"Chrono pattern: %Y-%m-%dT%H:%M:%S. Original error: input contains invalid characters\") }"
+        )]
+        pub fn test_parse_naive_date_time_from_str_w_pattern_err_invalid_chars() {
+            Value::parse_naive_date_time_from_str("2022-12-31 12:11:10", "%Y-%m-%dT%H:%M:%S")
+                .unwrap();
+        }
+
+        #[test]
+        pub fn test_parse_naive_date_time_from_str_iso8601_ymdhms() {
+            let exp = NaiveDate::from_ymd(2022, 12, 31).and_hms(12, 11, 10);
+
+            assert_eq!(
+                Ok(Value::NaiveDateTime(exp)),
+                Value::parse_naive_date_time_from_str_iso8601_ymdhms("2022-12-31 12:11:10")
+            );
+        }
+
+        #[test]
+        pub fn test_parse_date_time_from_str_w_pattern() {
+            let hour_secs = 3600;
+            let exp: DateTime<FixedOffset> = FixedOffset::east(5 * hour_secs) // east = +; west = -
+                .ymd(2022, 12, 31)
+                .and_hms(6, 0, 0);
+
+            let date_str = "2022-12-31T06:00:00+05:00";
+            let res = Value::parse_date_time_from_str(date_str, "%FT%T%:z");
+            assert_eq!(Ok(Value::DateTime(exp)), res);
+
+            let dt = DateTime::try_from(res.unwrap()).unwrap();
+            assert_eq!(dt.to_rfc3339(), String::from(date_str));
+        }
+
+        #[test]
+        #[should_panic(
+            expected = "Parsing(ValueFromStringFailed { src_value: \"2022-12-31T06:00:00\", target_type: \"Value::DateTime\", opt_info: Some(\"Chrono pattern: %FT%T%:z. Original error: premature end of input\") }"
+        )]
+        pub fn test_parse_date_time_from_str_w_pattern_err_prem_end_of_input() {
+            Value::parse_date_time_from_str("2022-12-31T06:00:00", "%FT%T%:z").unwrap();
+        }
+
+        #[test]
+        #[should_panic(
+            expected = "Parsing(ValueFromStringFailed { src_value: \"2022-12-31T06:00:00\", target_type: \"Value::DateTime\", opt_info: Some(\"Chrono pattern: %FT%T. Original error: input is not enough for unique date and time\") })"
+        )]
+        pub fn test_parse_date_time_from_str_w_pattern_err_invalid_chars() {
+            Value::parse_date_time_from_str("2022-12-31T06:00:00", "%FT%T").unwrap();
+        }
+
+        #[test]
+        #[should_panic(
+            expected = "Parsing(ValueFromStringFailed { src_value: \"2022-12-31T06:00:00+05:00\", target_type: \"Value::DateTime\", opt_info: Some(\"Chrono pattern: %FT%T%. Original error: bad or unsupported format string\") }"
+        )]
+        pub fn test_parse_date_time_from_str_w_pattern_err_bad_format_string() {
+            Value::parse_date_time_from_str("2022-12-31T06:00:00+05:00", "%FT%T%").unwrap();
+        }
+
+        #[test]
+        pub fn test_parse_date_time_from_str_rfc3339() {
+            let hour_secs = 3600;
+            let exp: DateTime<FixedOffset> = FixedOffset::east(5 * hour_secs) // east = +; west = -
+                .ymd(2022, 12, 31)
+                .and_hms(6, 0, 0);
+
+            let date_str = "2022-12-31T06:00:00+05:00";
+            let res = Value::parse_date_time_from_str_rfc3339(date_str);
+            assert_eq!(Ok(Value::DateTime(exp)), res);
+
+            let dt = DateTime::try_from(res.unwrap()).unwrap();
+            assert_eq!(dt.to_rfc3339(), String::from(date_str));
+        }
+
+        #[test]
+        pub fn test_parse_date_time_from_str_rfc2822() {
+            let hour_secs = 3600;
+            let exp: DateTime<FixedOffset> = FixedOffset::east(2 * hour_secs) // east = +; west = -
+                .ymd(2003, 7, 1)
+                .and_hms(10, 52, 37);
+
+            let date_str = "Tue, 01 Jul 2003 10:52:37 +0200";
+            let res = Value::parse_date_time_from_str_rfc2822(date_str);
+            assert_eq!(Ok(Value::DateTime(exp)), res);
+
+            let dt = DateTime::try_from(res.unwrap()).unwrap();
+            assert_eq!(dt.to_rfc2822(), String::from(date_str));
+        }
     }
 
-    #[test]
-    pub fn test_parse_int32_from_str_err() {
-        let err_res = Value::parse_int32_from_str("foobar");
+    mod default_values {
+        use chrono::{DateTime, FixedOffset, NaiveDate, TimeZone};
+        use rust_decimal::Decimal;
 
-        let exp = Err(VenumError::Parsing(ParseError::ValueFromStringFailed {
-            src_value: String::from("foobar"),
-            target_type: String::from("Value::Int32"),
-            opt_info: None,
-        }));
-        assert_eq!(exp, err_res);
+        use crate::venum::Value;
+
+        #[test]
+        pub fn test_char_default() {
+            assert_eq!(Value::Char('\0'), Value::char_default());
+        }
+
+        #[test]
+        pub fn test_string_default() {
+            assert_eq!(Value::String("".to_string()), Value::string_default());
+        }
+
+        #[test]
+        pub fn test_int8_default() {
+            assert_eq!(Value::Int8(0), Value::int8_default());
+        }
+
+        #[test]
+        pub fn test_int16_default() {
+            assert_eq!(Value::Int16(0), Value::int16_default());
+        }
+
+        #[test]
+        pub fn test_int32_default() {
+            assert_eq!(Value::Int32(0), Value::int32_default());
+        }
+
+        #[test]
+        pub fn test_int64_default() {
+            assert_eq!(Value::Int64(0), Value::int64_default());
+        }
+
+        #[test]
+        pub fn test_int128_default() {
+            assert_eq!(Value::Int128(0), Value::int128_default());
+        }
+
+        #[test]
+        pub fn test_uint8_default() {
+            assert_eq!(Value::UInt8(0), Value::uint8_default());
+        }
+
+        #[test]
+        pub fn test_uint16_default() {
+            assert_eq!(Value::UInt16(0), Value::uint16_default());
+        }
+
+        #[test]
+        pub fn test_uint32_default() {
+            assert_eq!(Value::UInt32(0), Value::uint32_default());
+        }
+
+        #[test]
+        pub fn test_uint64_default() {
+            assert_eq!(Value::UInt64(0), Value::uint64_default());
+        }
+
+        #[test]
+        pub fn test_uint128_default() {
+            assert_eq!(Value::UInt128(0), Value::uint128_default());
+        }
+
+        #[test]
+        pub fn test_float32_default() {
+            assert_eq!(Value::Float32(0.0), Value::float32_default());
+        }
+
+        #[test]
+        pub fn test_float64_default() {
+            assert_eq!(Value::Float64(0.0), Value::float64_default());
+        }
+
+        #[test]
+        pub fn test_bool_default() {
+            assert_eq!(Value::Bool(false), Value::bool_default());
+        }
+
+        #[test]
+        pub fn test_decimal_default() {
+            assert_eq!(
+                Value::Decimal(Decimal::new(00, 1)),
+                Value::decimal_default()
+            );
+        }
+
+        #[test]
+        pub fn test_naive_date_default() {
+            assert_eq!(
+                Value::NaiveDate(NaiveDate::from_ymd(1970, 01, 01)),
+                Value::naive_date_default()
+            );
+        }
+
+        #[test]
+        pub fn test_naive_date_time_default() {
+            assert_eq!(
+                Value::NaiveDateTime(NaiveDate::from_ymd(1970, 01, 01).and_hms(00, 00, 00)),
+                Value::naive_date_time_default()
+            );
+        }
+
+        #[test]
+        pub fn test_date_time_default() {
+            let exp: DateTime<FixedOffset> = FixedOffset::east(0) // east = +; west = -
+                .ymd(1970, 01, 01)
+                .and_hms(0, 0, 0);
+            assert_eq!(Value::DateTime(exp), Value::date_time_default());
+        }
     }
 
-    #[test]
-    pub fn test_parse_int64_from_str() {
-        assert_eq!(Ok(Value::Int64(-1)), Value::parse_int64_from_str("-1"));
-    }
-
-    #[test]
-    pub fn test_parse_int128_from_str() {
-        assert_eq!(Ok(Value::Int128(-1)), Value::parse_int128_from_str("-1"));
-    }
-
-    #[test]
-    pub fn test_parse_uint8_from_str() {
-        assert_eq!(
-            Ok(Value::UInt8(1)),
-            Value::parse_uint8_from_str(&String::from("1"))
-        );
-    }
-
-    #[test]
-    pub fn test_parse_uint16_from_str() {
-        assert_eq!(Ok(Value::UInt16(1)), Value::parse_uint16_from_str("1"));
-    }
-
-    #[test]
-    pub fn test_parse_uint32_from_str() {
-        assert_eq!(Ok(Value::UInt32(1)), Value::parse_uint32_from_str("1"));
-    }
-
-    #[test]
-    pub fn test_parse_uint64_from_str() {
-        assert_eq!(Ok(Value::UInt64(1)), Value::parse_uint64_from_str("1"));
-    }
-
-    #[test]
-    pub fn test_parse_uint128_from_str() {
-        assert_eq!(Ok(Value::UInt128(1)), Value::parse_uint128_from_str("1"));
-    }
-
-    #[test]
-    pub fn test_parse_float32_from_str() {
-        assert_eq!(Ok(Value::Float32(1.0)), Value::parse_float32_from_str("1"));
-    }
-
-    #[test]
-    pub fn test_parse_float64_from_str() {
-        assert_eq!(Ok(Value::Float64(1.0)), Value::parse_float64_from_str("1"));
-    }
-
-    #[test]
-    pub fn test_parse_bool_from_str() {
-        assert_eq!(Ok(Value::Bool(true)), Value::parse_bool_from_str("true"));
-    }
-
-    #[test]
-    #[should_panic(
-        expected = "Parsing(ValueFromStringFailed { src_value: \"1.123\", target_type: \"Value::Int32\", opt_info: None })"
-    )]
-    pub fn test_parse_i32_from_str_err() {
-        Value::parse_int32_from_str("1.123").unwrap();
-    }
-
-    #[test]
-    #[should_panic(
-        expected = "Parsing(ValueFromStringFailed { src_value: \"1.123\", target_type: \"Value::UInt32\", opt_info: None })"
-    )]
-    pub fn test_parse_u32_from_str_err() {
-        Value::parse_uint32_from_str("1.123").unwrap();
-    }
-
-    #[test]
-    #[should_panic(
-        expected = "Parsing(ValueFromStringFailed { src_value: \"foobar\", target_type: \"Value::Float32\", opt_info: None })"
-    )]
-    pub fn test_parse_f32_from_str_err() {
-        Value::parse_float32_from_str("foobar").unwrap();
-    }
-
-    #[test]
-    #[should_panic(
-        expected = "Parsing(ValueFromStringFailed { src_value: \"foobar\", target_type: \"Value::Bool\", opt_info: None })"
-    )]
-    pub fn test_parse_bool_from_str_err() {
-        Value::parse_bool_from_str("foobar").unwrap();
-    }
-
-    #[test]
-    pub fn test_parse_char_from_str() {
-        assert_eq!(Ok(Value::Char('a')), Value::parse_char_from_str("a"));
-    }
-
-    #[test]
-    #[should_panic(
-        expected = "Err(Parsing(ValueFromStringFailed { src_value: \"abc\", target_type: \"Value::Char\", opt_info: None }))"
-    )]
-    pub fn test_parse_char_from_str_err() {
-        assert_eq!(Ok(Value::Char('a')), Value::parse_char_from_str("abc"));
-    }
-
-    // ----------------------------------------------------------------------------------------------------------------------------------------
-    // ---------------------------------------------- Decimal and Date (parse_*_from_str) testing ---------------------------------------------
-    // ----------------------------------------------------------------------------------------------------------------------------------------
-    #[test]
-    pub fn test_parse_decimal_from_str() {
-        assert_eq!(
-            Ok(Value::Decimal(Decimal::new(1123, 3))),
-            Value::parse_decimal_from_str("1.123")
-        );
-    }
-
-    #[test]
-    #[should_panic(
-        expected = "Parsing(ValueFromStringFailed { src_value: \"foobar\", target_type: \"Value::Decimal\", opt_info: Some(\"Original error: Invalid decimal: unknown character\") })"
-    )]
-    pub fn test_parse_decimal_from_str_err() {
-        Value::parse_decimal_from_str("foobar").unwrap();
-    }
-
-    #[test]
-    pub fn test_parse_naive_date_from_str_w_pattern() {
-        let exp = NaiveDate::from_ymd(2022, 12, 31);
-
-        assert_eq!(
-            Ok(Value::NaiveDate(exp)),
-            Value::parse_naive_date_from_str("2022-12-31", "%Y-%m-%d")
-        );
-        assert_eq!(
-            Ok(Value::NaiveDate(exp)),
-            Value::parse_naive_date_from_str("2022-12-31", "%F")
-        );
-    }
-
-    #[test]
-    #[should_panic(
-        expected = "Parsing(ValueFromStringFailed { src_value: \"2022-12-31 00:00\", target_type: \"Value::NaiveDate\", opt_info: Some(\"Chrono pattern: %Y-%m-%d. Original error: trailing input\") })"
-    )]
-    pub fn test_parse_naive_date_from_str_w_pattern_err_trailing_inp() {
-        Value::parse_naive_date_from_str("2022-12-31 00:00", "%Y-%m-%d").unwrap();
-    }
-
-    #[test]
-    #[should_panic(
-        expected = "Parsing(ValueFromStringFailed { src_value: \"2022-12-31\", target_type: \"Value::NaiveDate\", opt_info: Some(\"Chrono pattern: %Y %m %d. Original error: input contains invalid characters\") })"
-    )]
-    pub fn test_parse_naive_date_from_str_w_pattern_err_invalid_chars() {
-        Value::parse_naive_date_from_str("2022-12-31", "%Y %m %d").unwrap();
-    }
-
-    #[test]
-    pub fn test_parse_naive_date_from_str_iso8601_ymd() {
-        let exp = NaiveDate::from_ymd(2022, 12, 31);
-
-        assert_eq!(
-            Ok(Value::NaiveDate(exp)),
-            Value::parse_naive_date_from_str_iso8601_ymd("2022-12-31")
-        );
-    }
-
-    #[test]
-    pub fn test_parse_naive_date_time_from_str_w_pattern() {
-        let exp = NaiveDate::from_ymd(2022, 12, 31).and_hms(12, 11, 10);
-
-        assert_eq!(
-            Ok(Value::NaiveDateTime(exp)),
-            Value::parse_naive_date_time_from_str("2022-12-31 12:11:10", "%Y-%m-%d %H:%M:%S")
-        );
-        assert_eq!(
-            Ok(Value::NaiveDateTime(exp)),
-            Value::parse_naive_date_time_from_str("2022-12-31 12:11:10", "%F %T")
-        );
-    }
-
-    #[test]
-    #[should_panic(
-        expected = "Parsing(ValueFromStringFailed { src_value: \"2022-12-31 12:11:10 000\", target_type: \"Value::NaiveDateTime\", opt_info: Some(\"Chrono pattern: %Y-%m-%d %H:%M:%S. Original error: trailing input\") }"
-    )]
-    pub fn test_parse_naive_date_time_from_str_w_pattern_err_trailing_inp() {
-        Value::parse_naive_date_time_from_str("2022-12-31 12:11:10 000", "%Y-%m-%d %H:%M:%S")
-            .unwrap();
-    }
-
-    #[test]
-    #[should_panic(
-        expected = "Parsing(ValueFromStringFailed { src_value: \"2022-12-31 12:11:10\", target_type: \"Value::NaiveDateTime\", opt_info: Some(\"Chrono pattern: %Y-%m-%dT%H:%M:%S. Original error: input contains invalid characters\") }"
-    )]
-    pub fn test_parse_naive_date_time_from_str_w_pattern_err_invalid_chars() {
-        Value::parse_naive_date_time_from_str("2022-12-31 12:11:10", "%Y-%m-%dT%H:%M:%S").unwrap();
-    }
-
-    #[test]
-    pub fn test_parse_naive_date_time_from_str_iso8601_ymdhms() {
-        let exp = NaiveDate::from_ymd(2022, 12, 31).and_hms(12, 11, 10);
-
-        assert_eq!(
-            Ok(Value::NaiveDateTime(exp)),
-            Value::parse_naive_date_time_from_str_iso8601_ymdhms("2022-12-31 12:11:10")
-        );
-    }
-
-    #[test]
-    pub fn test_parse_date_time_from_str_w_pattern() {
-        let hour_secs = 3600;
-        let exp: DateTime<FixedOffset> = FixedOffset::east(5 * hour_secs) // east = +; west = -
-            .ymd(2022, 12, 31)
-            .and_hms(6, 0, 0);
-
-        let date_str = "2022-12-31T06:00:00+05:00";
-        let res = Value::parse_date_time_from_str(date_str, "%FT%T%:z");
-        assert_eq!(Ok(Value::DateTime(exp)), res);
-
-        let dt = DateTime::try_from(res.unwrap()).unwrap();
-        assert_eq!(dt.to_rfc3339(), String::from(date_str));
-    }
-
-    #[test]
-    #[should_panic(
-        expected = "Parsing(ValueFromStringFailed { src_value: \"2022-12-31T06:00:00\", target_type: \"Value::DateTime\", opt_info: Some(\"Chrono pattern: %FT%T%:z. Original error: premature end of input\") }"
-    )]
-    pub fn test_parse_date_time_from_str_w_pattern_err_prem_end_of_input() {
-        Value::parse_date_time_from_str("2022-12-31T06:00:00", "%FT%T%:z").unwrap();
-    }
-
-    #[test]
-    #[should_panic(
-        expected = "Parsing(ValueFromStringFailed { src_value: \"2022-12-31T06:00:00\", target_type: \"Value::DateTime\", opt_info: Some(\"Chrono pattern: %FT%T. Original error: input is not enough for unique date and time\") })"
-    )]
-    pub fn test_parse_date_time_from_str_w_pattern_err_invalid_chars() {
-        Value::parse_date_time_from_str("2022-12-31T06:00:00", "%FT%T").unwrap();
-    }
-
-    #[test]
-    #[should_panic(
-        expected = "Parsing(ValueFromStringFailed { src_value: \"2022-12-31T06:00:00+05:00\", target_type: \"Value::DateTime\", opt_info: Some(\"Chrono pattern: %FT%T%. Original error: bad or unsupported format string\") }"
-    )]
-    pub fn test_parse_date_time_from_str_w_pattern_err_bad_format_string() {
-        Value::parse_date_time_from_str("2022-12-31T06:00:00+05:00", "%FT%T%").unwrap();
-    }
-
-    #[test]
-    pub fn test_parse_date_time_from_str_rfc3339() {
-        let hour_secs = 3600;
-        let exp: DateTime<FixedOffset> = FixedOffset::east(5 * hour_secs) // east = +; west = -
-            .ymd(2022, 12, 31)
-            .and_hms(6, 0, 0);
-
-        let date_str = "2022-12-31T06:00:00+05:00";
-        let res = Value::parse_date_time_from_str_rfc3339(date_str);
-        assert_eq!(Ok(Value::DateTime(exp)), res);
-
-        let dt = DateTime::try_from(res.unwrap()).unwrap();
-        assert_eq!(dt.to_rfc3339(), String::from(date_str));
-    }
-
-    #[test]
-    pub fn test_parse_date_time_from_str_rfc2822() {
-        let hour_secs = 3600;
-        let exp: DateTime<FixedOffset> = FixedOffset::east(2 * hour_secs) // east = +; west = -
-            .ymd(2003, 7, 1)
-            .and_hms(10, 52, 37);
-
-        let date_str = "Tue, 01 Jul 2003 10:52:37 +0200";
-        let res = Value::parse_date_time_from_str_rfc2822(date_str);
-        assert_eq!(Ok(Value::DateTime(exp)), res);
-
-        let dt = DateTime::try_from(res.unwrap()).unwrap();
-        assert_eq!(dt.to_rfc2822(), String::from(date_str));
-    }
-
-    // ----------------------------------------------------------------------------------------------------------------------------------------
-    // --------------------------------------- Testing that the default values are the expected ones ------------------------------------------
-    // ----------------------------------------------------------------------------------------------------------------------------------------
-    #[test]
-    pub fn test_char_default() {
-        assert_eq!(Value::Char('\0'), Value::char_default());
-    }
-
-    #[test]
-    pub fn test_string_default() {
-        assert_eq!(Value::String("".to_string()), Value::string_default());
-    }
-
-    #[test]
-    pub fn test_int8_default() {
-        assert_eq!(Value::Int8(0), Value::int8_default());
-    }
-
-    #[test]
-    pub fn test_int16_default() {
-        assert_eq!(Value::Int16(0), Value::int16_default());
-    }
-
-    #[test]
-    pub fn test_int32_default() {
-        assert_eq!(Value::Int32(0), Value::int32_default());
-    }
-
-    #[test]
-    pub fn test_int64_default() {
-        assert_eq!(Value::Int64(0), Value::int64_default());
-    }
-
-    #[test]
-    pub fn test_int128_default() {
-        assert_eq!(Value::Int128(0), Value::int128_default());
-    }
-
-    #[test]
-    pub fn test_uint8_default() {
-        assert_eq!(Value::UInt8(0), Value::uint8_default());
-    }
-
-    #[test]
-    pub fn test_uint16_default() {
-        assert_eq!(Value::UInt16(0), Value::uint16_default());
-    }
-
-    #[test]
-    pub fn test_uint32_default() {
-        assert_eq!(Value::UInt32(0), Value::uint32_default());
-    }
-
-    #[test]
-    pub fn test_uint64_default() {
-        assert_eq!(Value::UInt64(0), Value::uint64_default());
-    }
-
-    #[test]
-    pub fn test_uint128_default() {
-        assert_eq!(Value::UInt128(0), Value::uint128_default());
-    }
-
-    #[test]
-    pub fn test_float32_default() {
-        assert_eq!(Value::Float32(0.0), Value::float32_default());
-    }
-
-    #[test]
-    pub fn test_float64_default() {
-        assert_eq!(Value::Float64(0.0), Value::float64_default());
-    }
-
-    #[test]
-    pub fn test_bool_default() {
-        assert_eq!(Value::Bool(false), Value::bool_default());
-    }
-
-    #[test]
-    pub fn test_decimal_default() {
-        assert_eq!(
-            Value::Decimal(Decimal::new(00, 1)),
-            Value::decimal_default()
-        );
-    }
-
-    #[test]
-    pub fn test_naive_date_default() {
-        assert_eq!(
-            Value::NaiveDate(NaiveDate::from_ymd(1970, 01, 01)),
-            Value::naive_date_default()
-        );
-    }
-
-    #[test]
-    pub fn test_naive_date_time_default() {
-        assert_eq!(
-            Value::NaiveDateTime(NaiveDate::from_ymd(1970, 01, 01).and_hms(00, 00, 00)),
-            Value::naive_date_time_default()
-        );
-    }
-
-    #[test]
-    pub fn test_date_time_default() {
-        let exp: DateTime<FixedOffset> = FixedOffset::east(0) // east = +; west = -
-            .ymd(1970, 01, 01)
-            .and_hms(0, 0, 0);
-        assert_eq!(Value::DateTime(exp), Value::date_time_default());
-    }
-
-    // ----------------------------------------------------------------------------------------------------------------------------------------
-    // ------------------------------------------------- Testing conversions (from impls) -----------------------------------------------------
-    // ----------------------------------------------------------------------------------------------------------------------------------------
-    #[test]
-    pub fn test_impl_from_type_for_value() {
-        assert_eq!(
-            Value::String(String::from("foobar")),
-            Value::from(String::from("foobar"))
-        );
-
-        assert_eq!(Value::Char('a'), Value::from('a'));
-
-        assert_eq!(Value::Int8(0), Value::from(0i8));
-        assert_eq!(Value::Int16(0), Value::from(0i16));
-        assert_eq!(Value::Int32(0), Value::from(0i32));
-        assert_eq!(Value::Int64(0), Value::from(0i64));
-        assert_eq!(Value::Int128(0), Value::from(0i128));
-
-        assert_eq!(Value::UInt8(0), Value::from(0u8));
-        assert_eq!(Value::UInt16(0), Value::from(0u16));
-        assert_eq!(Value::UInt32(0), Value::from(0u32));
-        assert_eq!(Value::UInt64(0), Value::from(0u64));
-        assert_eq!(Value::UInt128(0), Value::from(0u128));
-
-        assert_eq!(Value::Float32(0.0), Value::from(0.0f32));
-        assert_eq!(Value::Float64(0.0), Value::from(0.0f64));
-
-        assert_eq!(Value::Bool(true), Value::from(true));
-
-        assert_eq!(
-            Value::Decimal(Decimal::new(00, 1)),
-            Value::from(Decimal::new(00, 1))
-        );
-
-        assert_eq!(
-            Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31)),
-            Value::from(NaiveDate::from_ymd(2022, 12, 31))
-        );
-        assert_eq!(
-            Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(12, 0, 0)),
-            Value::from(NaiveDate::from_ymd(2022, 12, 31).and_hms(12, 0, 0))
-        );
-
-        let dt: DateTime<FixedOffset> = FixedOffset::east(5 * 3600) // east = +; west = -
-            .ymd(2022, 12, 31)
-            .and_hms(6, 0, 0);
-        assert_eq!(Value::DateTime(dt), Value::from(dt));
-    }
-
-    #[test]
-    pub fn test_impl_try_from_value_for_type() {
-        assert_eq!(
-            String::from("foobar"),
-            String::try_from(Value::String(String::from("foobar"))).unwrap()
-        );
-
-        assert_eq!('a', char::try_from(Value::Char('a')).unwrap());
-
-        assert_eq!(0i8, i8::try_from(Value::Int8(0i8)).unwrap());
-        assert_eq!(0i16, i16::try_from(Value::Int16(0i16)).unwrap());
-        assert_eq!(0i32, i32::try_from(Value::Int32(0i32)).unwrap());
-        assert_eq!(0i64, i64::try_from(Value::Int64(0i64)).unwrap());
-        assert_eq!(0i128, i128::try_from(Value::Int128(0i128)).unwrap());
-
-        assert_eq!(0u8, u8::try_from(Value::UInt8(0u8)).unwrap());
-        assert_eq!(0u16, u16::try_from(Value::UInt16(0u16)).unwrap());
-        assert_eq!(0u32, u32::try_from(Value::UInt32(0u32)).unwrap());
-        assert_eq!(0u64, u64::try_from(Value::UInt64(0u64)).unwrap());
-        assert_eq!(0u128, u128::try_from(Value::UInt128(0u128)).unwrap());
-
-        assert_eq!(0.0f32, f32::try_from(Value::Float32(0.0f32)).unwrap());
-        assert_eq!(0.0f64, f64::try_from(Value::Float64(0.0f64)).unwrap());
-
-        assert_eq!(true, bool::try_from(Value::Bool(true)).unwrap());
-
-        assert_eq!(
-            Decimal::new(00, 1),
-            Decimal::try_from(Value::Decimal(Decimal::new(00, 1))).unwrap()
-        );
-
-        assert_eq!(
-            NaiveDate::from_ymd(2022, 12, 31),
-            NaiveDate::try_from(Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31))).unwrap()
-        );
-        assert_eq!(
-            NaiveDate::from_ymd(2022, 12, 31).and_hms(12, 00, 00),
-            NaiveDateTime::try_from(Value::NaiveDateTime(
-                NaiveDate::from_ymd(2022, 12, 31).and_hms(12, 00, 00)
-            ))
-            .unwrap()
-        );
-
-        let dt: DateTime<FixedOffset> = FixedOffset::east(5 * 3600) // east = +; west = -
-            .ymd(2022, 12, 31)
-            .and_hms(6, 0, 0);
-        assert_eq!(dt, DateTime::try_from(Value::DateTime(dt)).unwrap());
-    }
-
-    #[test]
-    #[should_panic(
-        expected = "Conversion(WrongType { src_value: \"Int8(0)\", src_type: \"Value::Int8\", target_type: \"bool\", opt_info: None })"
-    )]
-    pub fn string_to_bool_err() {
-        bool::try_from(Value::Int8(0i8)).unwrap();
-    }
-
-    #[test]
-    pub fn int8_from_str_and_templ_ok() {
-        let test = Value::from_string_with_templ("10", &Value::int8_default());
-        assert_eq!(Ok(Some(Value::Int8(10))), test);
-    }
-
-    #[test]
-    #[should_panic(
-        expected = "Parsing(ValueFromStringFailed { src_value: \"false\", target_type: \"Value::Int8\", opt_info: None })"
-    )]
-    pub fn int8_from_str_and_templ_err() {
-        Value::from_string_with_templ("false", &Value::int8_default()).unwrap();
+    mod conversions {
+        use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime, TimeZone};
+        use rust_decimal::Decimal;
+
+        use crate::venum::Value;
+
+        #[test]
+        pub fn test_impl_from_type_for_value() {
+            assert_eq!(
+                Value::String(String::from("foobar")),
+                Value::from(String::from("foobar"))
+            );
+
+            assert_eq!(Value::Char('a'), Value::from('a'));
+
+            assert_eq!(Value::Int8(0), Value::from(0i8));
+            assert_eq!(Value::Int16(0), Value::from(0i16));
+            assert_eq!(Value::Int32(0), Value::from(0i32));
+            assert_eq!(Value::Int64(0), Value::from(0i64));
+            assert_eq!(Value::Int128(0), Value::from(0i128));
+
+            assert_eq!(Value::UInt8(0), Value::from(0u8));
+            assert_eq!(Value::UInt16(0), Value::from(0u16));
+            assert_eq!(Value::UInt32(0), Value::from(0u32));
+            assert_eq!(Value::UInt64(0), Value::from(0u64));
+            assert_eq!(Value::UInt128(0), Value::from(0u128));
+
+            assert_eq!(Value::Float32(0.0), Value::from(0.0f32));
+            assert_eq!(Value::Float64(0.0), Value::from(0.0f64));
+
+            assert_eq!(Value::Bool(true), Value::from(true));
+
+            assert_eq!(
+                Value::Decimal(Decimal::new(00, 1)),
+                Value::from(Decimal::new(00, 1))
+            );
+
+            assert_eq!(
+                Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31)),
+                Value::from(NaiveDate::from_ymd(2022, 12, 31))
+            );
+            assert_eq!(
+                Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(12, 0, 0)),
+                Value::from(NaiveDate::from_ymd(2022, 12, 31).and_hms(12, 0, 0))
+            );
+
+            let dt: DateTime<FixedOffset> = FixedOffset::east(5 * 3600) // east = +; west = -
+                .ymd(2022, 12, 31)
+                .and_hms(6, 0, 0);
+            assert_eq!(Value::DateTime(dt), Value::from(dt));
+        }
+
+        #[test]
+        pub fn test_impl_try_from_value_for_type() {
+            assert_eq!(
+                String::from("foobar"),
+                String::try_from(Value::String(String::from("foobar"))).unwrap()
+            );
+
+            assert_eq!('a', char::try_from(Value::Char('a')).unwrap());
+
+            assert_eq!(0i8, i8::try_from(Value::Int8(0i8)).unwrap());
+            assert_eq!(0i16, i16::try_from(Value::Int16(0i16)).unwrap());
+            assert_eq!(0i32, i32::try_from(Value::Int32(0i32)).unwrap());
+            assert_eq!(0i64, i64::try_from(Value::Int64(0i64)).unwrap());
+            assert_eq!(0i128, i128::try_from(Value::Int128(0i128)).unwrap());
+
+            assert_eq!(0u8, u8::try_from(Value::UInt8(0u8)).unwrap());
+            assert_eq!(0u16, u16::try_from(Value::UInt16(0u16)).unwrap());
+            assert_eq!(0u32, u32::try_from(Value::UInt32(0u32)).unwrap());
+            assert_eq!(0u64, u64::try_from(Value::UInt64(0u64)).unwrap());
+            assert_eq!(0u128, u128::try_from(Value::UInt128(0u128)).unwrap());
+
+            assert_eq!(0.0f32, f32::try_from(Value::Float32(0.0f32)).unwrap());
+            assert_eq!(0.0f64, f64::try_from(Value::Float64(0.0f64)).unwrap());
+
+            assert_eq!(true, bool::try_from(Value::Bool(true)).unwrap());
+
+            assert_eq!(
+                Decimal::new(00, 1),
+                Decimal::try_from(Value::Decimal(Decimal::new(00, 1))).unwrap()
+            );
+
+            assert_eq!(
+                NaiveDate::from_ymd(2022, 12, 31),
+                NaiveDate::try_from(Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31))).unwrap()
+            );
+            assert_eq!(
+                NaiveDate::from_ymd(2022, 12, 31).and_hms(12, 00, 00),
+                NaiveDateTime::try_from(Value::NaiveDateTime(
+                    NaiveDate::from_ymd(2022, 12, 31).and_hms(12, 00, 00)
+                ))
+                .unwrap()
+            );
+
+            let dt: DateTime<FixedOffset> = FixedOffset::east(5 * 3600) // east = +; west = -
+                .ymd(2022, 12, 31)
+                .and_hms(6, 0, 0);
+            assert_eq!(dt, DateTime::try_from(Value::DateTime(dt)).unwrap());
+        }
+
+        #[test]
+        #[should_panic(
+            expected = "Conversion(WrongType { src_value: \"Int8(0)\", src_type: \"Value::Int8\", target_type: \"bool\", opt_info: None })"
+        )]
+        pub fn string_to_bool_err() {
+            bool::try_from(Value::Int8(0i8)).unwrap();
+        }
+
+        #[test]
+        pub fn int8_from_str_and_templ_ok() {
+            let test = Value::from_string_with_templ("10", &Value::int8_default());
+            assert_eq!(Ok(Some(Value::Int8(10))), test);
+        }
+
+        #[test]
+        #[should_panic(
+            expected = "Parsing(ValueFromStringFailed { src_value: \"false\", target_type: \"Value::Int8\", opt_info: None })"
+        )]
+        pub fn int8_from_str_and_templ_err() {
+            Value::from_string_with_templ("false", &Value::int8_default()).unwrap();
+        }
     }
 }
