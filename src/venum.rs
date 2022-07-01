@@ -11,11 +11,8 @@ const ENUM_VAR_ND: &str = "NaiveDate";
 const ENUM_VAR_NDT: &str = "NaiveDateTime";
 const ENUM_VAR_DT: &str = "DateTime";
 
-#[derive(Display, Debug, Clone, PartialEq, PartialOrd)]
-#[cfg_attr(
-    feature = "serde_support",
-    derive(serde::Serialize, serde::Deserialize)
-)]
+#[derive(Default, Display, Debug, Clone, PartialEq, PartialOrd)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum ValueNames {
     Char,
     String,
@@ -31,6 +28,7 @@ pub enum ValueNames {
     UInt128,
     Float32,
     Float64,
+    #[default]
     Bool,
     Decimal,
     NaiveDate,
@@ -39,10 +37,7 @@ pub enum ValueNames {
 }
 
 #[derive(Display, Debug, Clone, PartialEq, PartialOrd)]
-#[cfg_attr(
-    feature = "serde_support",
-    derive(serde::Serialize, serde::Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Value {
     Char(char),
     String(String),
