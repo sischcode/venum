@@ -1,11 +1,10 @@
 use std::convert::From;
 
-use crate::errors::{ConversionError, ParseError, Result, VenumError};
-
 use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime};
 use rust_decimal::{prelude::FromPrimitive, Decimal};
-
 use strum_macros::Display; // used to generate names for the enum variants. Used only for error messages (as of now).
+
+use crate::errors::{ConversionError, ParseError, Result, VenumError};
 
 const VAL_ENUM_NAME: &str = "Value::";
 const ENUM_VAR_ND: &str = "NaiveDate";
@@ -13,6 +12,37 @@ const ENUM_VAR_NDT: &str = "NaiveDateTime";
 const ENUM_VAR_DT: &str = "DateTime";
 
 #[derive(Display, Debug, Clone, PartialEq, PartialOrd)]
+#[cfg_attr(
+    feature = "serde_support",
+    derive(serde::Serialize, serde::Deserialize)
+)]
+pub enum ValueNames {
+    Char,
+    String,
+    Int8,
+    Int16,
+    Int32,
+    Int64,
+    Int128,
+    UInt8,
+    UInt16,
+    UInt32,
+    UInt64,
+    UInt128,
+    Float32,
+    Float64,
+    Bool,
+    Decimal,
+    NaiveDate,
+    NaiveDateTime,
+    DateTime,
+}
+
+#[derive(Display, Debug, Clone, PartialEq, PartialOrd)]
+#[cfg_attr(
+    feature = "serde_support",
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub enum Value {
     Char(char),
     String(String),
