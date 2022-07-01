@@ -5,7 +5,7 @@ authors = ["Joerg Sischka <sischcode@gmx.net>"]
 readme = "README.md"
 keywords = ["venum", "rust", "enum", "dynamic typing", "serialization", "deserialization", "parsing"]
 edition = "2021"
-rust-version = "1.61"
+rust-version = "1.62"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -16,3 +16,10 @@ rust_decimal = "1.22"
 rust_decimal_macros = "1.22"
 strum = "0.24"
 strum_macros = "0.24"
+
+# This is behind the (implicit) feature: "dep:serde"
+serde = { version = "1.0", features = ["derive"], optional = true}
+
+[features]
+# default = ["serde"]
+serde = ["dep:serde", "chrono/serde"]
