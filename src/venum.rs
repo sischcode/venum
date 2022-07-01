@@ -218,6 +218,58 @@ macro_rules! is_type {
     };
 }
 
+impl From<ValueName> for Value {
+    fn from(vvvn: ValueName) -> Self {
+        match vvvn {
+            ValueName::Char => Value::char_default(),
+            ValueName::String => Value::string_default(),
+            ValueName::Int8 => Value::int8_default(),
+            ValueName::Int16 => Value::int16_default(),
+            ValueName::Int32 => Value::int32_default(),
+            ValueName::Int64 => Value::int64_default(),
+            ValueName::Int128 => Value::int128_default(),
+            ValueName::UInt8 => Value::uint8_default(),
+            ValueName::UInt16 => Value::uint16_default(),
+            ValueName::UInt32 => Value::uint32_default(),
+            ValueName::UInt64 => Value::uint64_default(),
+            ValueName::UInt128 => Value::uint128_default(),
+            ValueName::Float32 => Value::float32_default(),
+            ValueName::Float64 => Value::float64_default(),
+            ValueName::Bool => Value::bool_default(),
+            ValueName::Decimal => Value::decimal_default(),
+            ValueName::NaiveDate => Value::naive_date_default(),
+            ValueName::NaiveDateTime => Value::naive_date_time_default(),
+            ValueName::DateTime => Value::date_time_default(),
+        }
+    }
+}
+
+impl From<&ValueName> for Value {
+    fn from(vvvn: &ValueName) -> Self {
+        match vvvn {
+            ValueName::Char => Value::char_default(),
+            ValueName::String => Value::string_default(),
+            ValueName::Int8 => Value::int8_default(),
+            ValueName::Int16 => Value::int16_default(),
+            ValueName::Int32 => Value::int32_default(),
+            ValueName::Int64 => Value::int64_default(),
+            ValueName::Int128 => Value::int128_default(),
+            ValueName::UInt8 => Value::uint8_default(),
+            ValueName::UInt16 => Value::uint16_default(),
+            ValueName::UInt32 => Value::uint32_default(),
+            ValueName::UInt64 => Value::uint64_default(),
+            ValueName::UInt128 => Value::uint128_default(),
+            ValueName::Float32 => Value::float32_default(),
+            ValueName::Float64 => Value::float64_default(),
+            ValueName::Bool => Value::bool_default(),
+            ValueName::Decimal => Value::decimal_default(),
+            ValueName::NaiveDate => Value::naive_date_default(),
+            ValueName::NaiveDateTime => Value::naive_date_time_default(),
+            ValueName::DateTime => Value::date_time_default(),
+        }
+    }
+}
+
 impl Value {
     type_defaults!(char_default, Char, char);
     type_defaults!(string_default, String, String);
@@ -549,6 +601,62 @@ pub type OptValue = Option<Value>;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    mod value_name {
+        use crate::venum::{Value, ValueName};
+
+        #[test]
+        fn test_from_venum_value_variant_name_for_value() {
+            assert_eq!(Value::char_default(), ValueName::Char.into());
+            assert_eq!(Value::string_default(), ValueName::String.into());
+            assert_eq!(Value::int8_default(), ValueName::Int8.into());
+            assert_eq!(Value::int16_default(), ValueName::Int16.into());
+            assert_eq!(Value::int32_default(), ValueName::Int32.into());
+            assert_eq!(Value::int64_default(), ValueName::Int64.into());
+            assert_eq!(Value::int128_default(), ValueName::Int128.into());
+            assert_eq!(Value::uint8_default(), ValueName::UInt8.into());
+            assert_eq!(Value::uint16_default(), ValueName::UInt16.into());
+            assert_eq!(Value::uint32_default(), ValueName::UInt32.into());
+            assert_eq!(Value::uint64_default(), ValueName::UInt64.into());
+            assert_eq!(Value::uint128_default(), ValueName::UInt128.into());
+            assert_eq!(Value::float32_default(), ValueName::Float32.into());
+            assert_eq!(Value::float64_default(), ValueName::Float64.into());
+            assert_eq!(Value::bool_default(), ValueName::Bool.into());
+            assert_eq!(Value::decimal_default(), ValueName::Decimal.into());
+            assert_eq!(Value::naive_date_default(), ValueName::NaiveDate.into());
+            assert_eq!(
+                Value::naive_date_time_default(),
+                ValueName::NaiveDateTime.into()
+            );
+            assert_eq!(Value::date_time_default(), ValueName::DateTime.into());
+        }
+
+        #[test]
+        fn test_from_venum_value_variant_name_ref_for_value() {
+            assert_eq!(Value::char_default(), (&ValueName::Char).into());
+            assert_eq!(Value::string_default(), (&ValueName::String).into());
+            assert_eq!(Value::int8_default(), (&ValueName::Int8).into());
+            assert_eq!(Value::int16_default(), (&ValueName::Int16).into());
+            assert_eq!(Value::int32_default(), (&ValueName::Int32).into());
+            assert_eq!(Value::int64_default(), (&ValueName::Int64).into());
+            assert_eq!(Value::int128_default(), (&ValueName::Int128).into());
+            assert_eq!(Value::uint8_default(), (&ValueName::UInt8).into());
+            assert_eq!(Value::uint16_default(), (&ValueName::UInt16).into());
+            assert_eq!(Value::uint32_default(), (&ValueName::UInt32).into());
+            assert_eq!(Value::uint64_default(), (&ValueName::UInt64).into());
+            assert_eq!(Value::uint128_default(), (&ValueName::UInt128).into());
+            assert_eq!(Value::float32_default(), (&ValueName::Float32).into());
+            assert_eq!(Value::float64_default(), (&ValueName::Float64).into());
+            assert_eq!(Value::bool_default(), (&ValueName::Bool).into());
+            assert_eq!(Value::decimal_default(), (&ValueName::Decimal).into());
+            assert_eq!(Value::naive_date_default(), (&ValueName::NaiveDate).into());
+            assert_eq!(
+                Value::naive_date_time_default(),
+                (&ValueName::NaiveDateTime).into()
+            );
+            assert_eq!(Value::date_time_default(), (&ValueName::DateTime).into());
+        }
+    }
 
     mod parse_from_str {
         use super::*;
