@@ -13,7 +13,7 @@ const ENUM_VAR_DT: &str = "DateTime";
 
 #[derive(Default, Display, Debug, Clone, PartialEq, PartialOrd)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub enum ValueNames {
+pub enum ValueName {
     Char,
     String,
     Int8,
