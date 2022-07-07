@@ -503,7 +503,7 @@ impl Value {
     /// NOTE2: For date types (NaiveDate, NaiveDateTime, DateTime) only the most common cases (iso8601_ymd, iso8601_ymdhms and rfc3339) have been implemented. Every other
     ///        format _will_ error!
     pub fn from_string_with_templ(value: &str, templ_type: &Value) -> Result<Option<Value>> {
-        if value == "" || value.to_lowercase() == "null" {
+        if value.is_empty() || value.to_lowercase() == "null" {
             return Ok(None);
         }
         match templ_type {
@@ -541,7 +541,7 @@ impl Value {
         templ_type: &Value,
         chrono_pattern: &str,
     ) -> Result<Option<Value>> {
-        if value == "" || value.to_lowercase() == "null" {
+        if value.is_empty() || value.to_lowercase() == "null" {
             return Ok(None);
         }
         match templ_type {
