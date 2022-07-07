@@ -12,24 +12,24 @@ pub enum VenumError {
 #[derive(Error, Debug, PartialEq, Clone)]
 pub enum ParseError {
     #[error(
-        "Can't parse string '{src_value:?}' to construct a {target_type:?}. Optional info: {opt_info:?}"
+        "Can't parse string '{src_value:?}' to construct a {target_type:?}. Details: {details:?}"
     )]
     ValueFromStringFailed {
         src_value: String,
         target_type: String,
-        opt_info: Option<String>,
+        details: Option<String>,
     },
 }
 
 // The Error derive also implements the Display trait!
 #[derive(Error, Debug, PartialEq, Clone)]
 pub enum ConversionError {
-    #[error("Can't convert {src_type:?} with value {src_value:?} to target type {target_type:?}. Optional info: {opt_info:?}")]
+    #[error("Can't convert {src_type:?} with value {src_value:?} to target type {target_type:?}. Details: {details:?}")]
     WrongType {
         src_value: String,
         src_type: String,
         target_type: String,
-        opt_info: Option<String>,
+        details: Option<String>,
     },
 }
 
