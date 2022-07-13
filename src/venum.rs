@@ -13,7 +13,7 @@ const ENUM_VAR_DT: &str = "DateTime";
 
 #[derive(Default, Display, Debug, Clone, PartialEq, PartialOrd)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub enum ValueName {
+pub enum ValueType {
     Char,
     String,
     Int8,
@@ -36,9 +36,52 @@ pub enum ValueName {
     DateTime,
 }
 
+impl ValueType {
+    pub fn is_some_date_type(&self) -> bool {
+        match self {
+            ValueType::NaiveDate | ValueType::NaiveDateTime | ValueType::DateTime => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_some_signed_int_type(&self) -> bool {
+        match self {
+            ValueType::Int8
+            | ValueType::Int16
+            | ValueType::Int32
+            | ValueType::Int64
+            | ValueType::Int128 => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_some_unsigned_int_type(&self) -> bool {
+        match self {
+            ValueType::UInt8
+            | ValueType::UInt16
+            | ValueType::UInt32
+            | ValueType::UInt64
+            | ValueType::UInt128 => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_some_int_type(&self) -> bool {
+        self.is_some_signed_int_type() || self.is_some_unsigned_int_type()
+    }
+
+    pub fn is_some_float_type(&self) -> bool {
+        match self {
+            ValueType::Float32 | ValueType::Float64 => true,
+            _ => false,
+        }
+    }
+}
+
 #[derive(Display, Debug, Clone, PartialEq, PartialOrd)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Value {
+    None,
     Char(char),
     String(String),
     Int8(i8),
@@ -187,6 +230,17 @@ impl_try_from_value_ref_for_clone_type!(DateTime, DateTime<FixedOffset>);
 macro_rules! from_type_string {
     ($fn_name:ident, $enum_type:ident, $for_type:ty) => {
         pub fn $fn_name(v: &str) -> Result<Value> {
+            // TODO: is this a good idea? Can it ever be, that we do not(!)
+            //       want an empty string to be mapped to None? Is there a
+            //       case where an empty string somewhere is actually a real,
+            //       meaningful value?
+            //       In any case, we -for now- only to this for empty (source)
+            //       strings and not for stuff like "null" Strings, as this
+            //       could really be a value ...for some reason.
+            if v.is_empty() {
+                return Ok(Value::None);
+            }
+
             let temp = v.parse::<$for_type>().map_err(|_| {
                 VenumError::Parsing(ParseError::ValueFromStringFailed {
                     src_value: String::from(v),
@@ -218,54 +272,54 @@ macro_rules! is_type {
     };
 }
 
-impl From<ValueName> for Value {
-    fn from(vvvn: ValueName) -> Self {
+impl From<ValueType> for Value {
+    fn from(vvvn: ValueType) -> Self {
         match vvvn {
-            ValueName::Char => Value::char_default(),
-            ValueName::String => Value::string_default(),
-            ValueName::Int8 => Value::int8_default(),
-            ValueName::Int16 => Value::int16_default(),
-            ValueName::Int32 => Value::int32_default(),
-            ValueName::Int64 => Value::int64_default(),
-            ValueName::Int128 => Value::int128_default(),
-            ValueName::UInt8 => Value::uint8_default(),
-            ValueName::UInt16 => Value::uint16_default(),
-            ValueName::UInt32 => Value::uint32_default(),
-            ValueName::UInt64 => Value::uint64_default(),
-            ValueName::UInt128 => Value::uint128_default(),
-            ValueName::Float32 => Value::float32_default(),
-            ValueName::Float64 => Value::float64_default(),
-            ValueName::Bool => Value::bool_default(),
-            ValueName::Decimal => Value::decimal_default(),
-            ValueName::NaiveDate => Value::naive_date_default(),
-            ValueName::NaiveDateTime => Value::naive_date_time_default(),
-            ValueName::DateTime => Value::date_time_default(),
+            ValueType::Char => Value::char_default(),
+            ValueType::String => Value::string_default(),
+            ValueType::Int8 => Value::int8_default(),
+            ValueType::Int16 => Value::int16_default(),
+            ValueType::Int32 => Value::int32_default(),
+            ValueType::Int64 => Value::int64_default(),
+            ValueType::Int128 => Value::int128_default(),
+            ValueType::UInt8 => Value::uint8_default(),
+            ValueType::UInt16 => Value::uint16_default(),
+            ValueType::UInt32 => Value::uint32_default(),
+            ValueType::UInt64 => Value::uint64_default(),
+            ValueType::UInt128 => Value::uint128_default(),
+            ValueType::Float32 => Value::float32_default(),
+            ValueType::Float64 => Value::float64_default(),
+            ValueType::Bool => Value::bool_default(),
+            ValueType::Decimal => Value::decimal_default(),
+            ValueType::NaiveDate => Value::naive_date_default(),
+            ValueType::NaiveDateTime => Value::naive_date_time_default(),
+            ValueType::DateTime => Value::date_time_default(),
         }
     }
 }
 
-impl From<&ValueName> for Value {
-    fn from(vvvn: &ValueName) -> Self {
+impl From<&ValueType> for Value {
+    fn from(vvvn: &ValueType) -> Self {
         match vvvn {
-            ValueName::Char => Value::char_default(),
-            ValueName::String => Value::string_default(),
-            ValueName::Int8 => Value::int8_default(),
-            ValueName::Int16 => Value::int16_default(),
-            ValueName::Int32 => Value::int32_default(),
-            ValueName::Int64 => Value::int64_default(),
-            ValueName::Int128 => Value::int128_default(),
-            ValueName::UInt8 => Value::uint8_default(),
-            ValueName::UInt16 => Value::uint16_default(),
-            ValueName::UInt32 => Value::uint32_default(),
-            ValueName::UInt64 => Value::uint64_default(),
-            ValueName::UInt128 => Value::uint128_default(),
-            ValueName::Float32 => Value::float32_default(),
-            ValueName::Float64 => Value::float64_default(),
-            ValueName::Bool => Value::bool_default(),
-            ValueName::Decimal => Value::decimal_default(),
-            ValueName::NaiveDate => Value::naive_date_default(),
-            ValueName::NaiveDateTime => Value::naive_date_time_default(),
-            ValueName::DateTime => Value::date_time_default(),
+            ValueType::Char => Value::char_default(),
+            ValueType::String => Value::string_default(),
+            ValueType::Int8 => Value::int8_default(),
+            ValueType::Int16 => Value::int16_default(),
+            ValueType::Int32 => Value::int32_default(),
+            ValueType::Int64 => Value::int64_default(),
+            ValueType::Int128 => Value::int128_default(),
+            ValueType::UInt8 => Value::uint8_default(),
+            ValueType::UInt16 => Value::uint16_default(),
+            ValueType::UInt32 => Value::uint32_default(),
+            ValueType::UInt64 => Value::uint64_default(),
+            ValueType::UInt128 => Value::uint128_default(),
+            ValueType::Float32 => Value::float32_default(),
+            ValueType::Float64 => Value::float64_default(),
+            ValueType::Bool => Value::bool_default(),
+            ValueType::Decimal => Value::decimal_default(),
+            ValueType::NaiveDate => Value::naive_date_default(),
+            ValueType::NaiveDateTime => Value::naive_date_time_default(),
+            ValueType::DateTime => Value::date_time_default(),
         }
     }
 }
@@ -317,7 +371,12 @@ impl Value {
     from_type_string!(parse_float32_from_str, Float32, f32);
     from_type_string!(parse_float64_from_str, Float64, f64);
     from_type_string!(parse_bool_from_str, Bool, bool);
+
     pub fn parse_decimal_from_str(v: &str) -> Result<Value> {
+        // Is this really a good idea?
+        if v.is_empty() {
+            return Ok(Value::None);
+        }
         let temp = Decimal::from_str_exact(v).map_err(|oe| {
             VenumError::Parsing(ParseError::ValueFromStringFailed {
                 src_value: String::from(v),
@@ -329,6 +388,10 @@ impl Value {
     }
     pub fn parse_naive_date_from_str(v: &str, chrono_pattern: &str) -> Result<Value> {
         // e.g pattern "%Y-%m-%d" to parse "2015-09-05"
+        // Is this really a good idea?
+        if v.is_empty() {
+            return Ok(Value::None);
+        }
         let temp = NaiveDate::parse_from_str(v, chrono_pattern).map_err(|oe| {
             VenumError::Parsing(ParseError::ValueFromStringFailed {
                 src_value: String::from(v),
@@ -342,6 +405,10 @@ impl Value {
     }
     pub fn parse_naive_date_from_str_iso8601_ymd(v: &str) -> Result<Value> {
         // e.g pattern "%F" (which is "%Y-%m-%d") to parse "2015-09-05"
+        // Is this really a good idea?
+        if v.is_empty() {
+            return Ok(Value::None);
+        }
         let chrono_pattern = "%F";
         let temp = NaiveDate::parse_from_str(v, chrono_pattern).map_err(|oe| {
             VenumError::Parsing(ParseError::ValueFromStringFailed {
@@ -356,6 +423,10 @@ impl Value {
     }
     pub fn parse_naive_date_time_from_str(v: &str, chrono_pattern: &str) -> Result<Value> {
         // e.g pattern "%F %T" (which is "%Y-%m-%d %H:%M:%S") to parse "2015-09-05 23:56:04"
+        // Is this really a good idea?
+        if v.is_empty() {
+            return Ok(Value::None);
+        }
         let temp = NaiveDateTime::parse_from_str(v, chrono_pattern).map_err(|oe| {
             VenumError::Parsing(ParseError::ValueFromStringFailed {
                 src_value: String::from(v),
@@ -369,6 +440,10 @@ impl Value {
     }
     pub fn parse_naive_date_time_from_str_iso8601_ymdhms(v: &str) -> Result<Value> {
         // e.g pattern "%F %T" (which is "%Y-%m-%d %H:%M:%S") to parse "2015-09-05 23:56:04"
+        // Is this really a good idea?
+        if v.is_empty() {
+            return Ok(Value::None);
+        }
         let chrono_pattern = "%F %T";
         let temp = NaiveDateTime::parse_from_str(v, chrono_pattern).map_err(|oe| {
             VenumError::Parsing(ParseError::ValueFromStringFailed {
@@ -382,6 +457,10 @@ impl Value {
         Ok(Value::NaiveDateTime(temp))
     }
     pub fn parse_date_time_from_str(v: &str, chrono_pattern: &str) -> Result<Value> {
+        // Is this really a good idea?
+        if v.is_empty() {
+            return Ok(Value::None);
+        }
         let temp = DateTime::parse_from_str(v, chrono_pattern).map_err(|oe| {
             VenumError::Parsing(ParseError::ValueFromStringFailed {
                 src_value: String::from(v),
@@ -394,6 +473,10 @@ impl Value {
         Ok(Value::DateTime(temp))
     }
     pub fn parse_date_time_from_str_rfc2822(v: &str) -> Result<Value> {
+        // Is this really a good idea?
+        if v.is_empty() {
+            return Ok(Value::None);
+        }
         // e.g date as: "Tue, 1 Jul 2003 10:52:37 +0200"
         let temp = DateTime::parse_from_rfc2822(v).map_err(|oe| {
             VenumError::Parsing(ParseError::ValueFromStringFailed {
@@ -405,6 +488,10 @@ impl Value {
         Ok(Value::DateTime(temp))
     }
     pub fn parse_date_time_from_str_rfc3339(v: &str) -> Result<Value> {
+        // Is this really a good idea?
+        if v.is_empty() {
+            return Ok(Value::None);
+        }
         // e.g date as: "1996-12-19T16:39:57-08:00"
         let temp = DateTime::parse_from_rfc3339(v).map_err(|oe| {
             VenumError::Parsing(ParseError::ValueFromStringFailed {
@@ -453,6 +540,12 @@ impl Value {
         Value::Decimal(Decimal::from_f64(v).unwrap()) // I can't think of a case where a f64 cannot be represented by a decimal
     }
 
+    pub fn is_none(&self) -> bool {
+        match self {
+            Value::None => true,
+            _ => false,
+        }
+    }
     is_type!(is_char, Char);
     is_type!(is_string, String);
     is_type!(is_int8, Int8);
@@ -473,90 +566,59 @@ impl Value {
     is_type!(is_naive_date_time, NaiveDateTime);
     is_type!(is_date_time, DateTime);
 
-    pub fn get_default_of_self_variant(&self) -> Value {
-        match self {
-            Value::Char(_) => Value::char_default(),
-            Value::String(_) => Value::string_default(),
-            Value::Int8(_) => Value::int8_default(),
-            Value::Int16(_) => Value::int16_default(),
-            Value::Int32(_) => Value::int32_default(),
-            Value::Int64(_) => Value::int64_default(),
-            Value::Int128(_) => Value::int128_default(),
-            Value::UInt8(_) => Value::uint8_default(),
-            Value::UInt16(_) => Value::uint16_default(),
-            Value::UInt32(_) => Value::uint32_default(),
-            Value::UInt64(_) => Value::uint64_default(),
-            Value::UInt128(_) => Value::uint128_default(),
-            Value::Float32(_) => Value::float32_default(),
-            Value::Float64(_) => Value::float64_default(),
-            Value::Bool(_) => Value::bool_default(),
-            Value::Decimal(_) => Value::decimal_default(),
-            Value::NaiveDate(_) => Value::naive_date_default(),
-            Value::NaiveDateTime(_) => Value::naive_date_time_default(),
-            Value::DateTime(_) => Value::date_time_default(),
-        }
-    }
-
     /// NOTE: We decided agains Option<String> here as the type of the value since the intention is to create a typed version of a stringy-input we read from some CSV.
     ///       In that case, when a CSV column contains a "" as an entry, e.g. like this: `a,,c` or this `"a","","c"`, where the middle column would translate to empty / "",
     ///       we map it to a None internally, representing the absence of data.
     /// NOTE2: For date types (NaiveDate, NaiveDateTime, DateTime) only the most common cases (iso8601_ymd, iso8601_ymdhms and rfc3339) have been implemented. Every other
     ///        format _will_ error!
-    pub fn from_string_with_templ(value: &str, templ_type: &Value) -> Result<Option<Value>> {
+    pub fn from_string_with_templ(value: &str, type_info: &ValueType) -> Result<Value> {
         if value.is_empty() || value.to_lowercase() == "null" {
-            return Ok(None);
+            // TODO: handle other to-none-options
+            return Ok(Value::None);
         }
-        match templ_type {
-            Value::Char(_) => Ok(Some(Value::parse_char_from_str(value)?)),
-            Value::String(_) => Ok(Some(Value::String(value.into()))),
+        match type_info {
+            ValueType::Char => Value::parse_char_from_str(value),
+            ValueType::String => Ok(Value::String(value.into())),
 
-            Value::Int8(_) => Ok(Some(Value::parse_int8_from_str(value)?)),
-            Value::Int16(_) => Ok(Some(Value::parse_int16_from_str(value)?)),
-            Value::Int32(_) => Ok(Some(Value::parse_int32_from_str(value)?)),
-            Value::Int64(_) => Ok(Some(Value::parse_int64_from_str(value)?)),
-            Value::Int128(_) => Ok(Some(Value::parse_int128_from_str(value)?)),
+            ValueType::Int8 => Value::parse_int8_from_str(value),
+            ValueType::Int16 => Value::parse_int16_from_str(value),
+            ValueType::Int32 => Value::parse_int32_from_str(value),
+            ValueType::Int64 => Value::parse_int64_from_str(value),
+            ValueType::Int128 => Value::parse_int128_from_str(value),
 
-            Value::UInt8(_) => Ok(Some(Value::parse_uint8_from_str(value)?)),
-            Value::UInt16(_) => Ok(Some(Value::parse_uint16_from_str(value)?)),
-            Value::UInt32(_) => Ok(Some(Value::parse_uint32_from_str(value)?)),
-            Value::UInt64(_) => Ok(Some(Value::parse_uint64_from_str(value)?)),
-            Value::UInt128(_) => Ok(Some(Value::parse_uint128_from_str(value)?)),
+            ValueType::UInt8 => Value::parse_uint8_from_str(value),
+            ValueType::UInt16 => Value::parse_uint16_from_str(value),
+            ValueType::UInt32 => Value::parse_uint32_from_str(value),
+            ValueType::UInt64 => Value::parse_uint64_from_str(value),
+            ValueType::UInt128 => Value::parse_uint128_from_str(value),
 
-            Value::Float32(_) => Ok(Some(Value::parse_float32_from_str(value)?)),
-            Value::Float64(_) => Ok(Some(Value::parse_float64_from_str(value)?)),
+            ValueType::Float32 => Value::parse_float32_from_str(value),
+            ValueType::Float64 => Value::parse_float64_from_str(value),
 
-            Value::Bool(_) => Ok(Some(Value::parse_bool_from_str(value)?)),
-            Value::Decimal(_) => Ok(Some(Value::parse_decimal_from_str(value)?)),
+            ValueType::Bool => Value::parse_bool_from_str(value),
+            ValueType::Decimal => Value::parse_decimal_from_str(value),
 
-            Value::NaiveDate(_) => Ok(Some(Value::parse_naive_date_from_str_iso8601_ymd(value)?)),
-            Value::NaiveDateTime(_) => Ok(Some(
-                Value::parse_naive_date_time_from_str_iso8601_ymdhms(value)?,
-            )),
-            Value::DateTime(_) => Ok(Some(Value::parse_date_time_from_str_rfc3339(value)?)),
+            ValueType::NaiveDate => Value::parse_naive_date_from_str_iso8601_ymd(value),
+            ValueType::NaiveDateTime => Value::parse_naive_date_time_from_str_iso8601_ymdhms(value),
+            ValueType::DateTime => Value::parse_date_time_from_str_rfc3339(value),
         }
     }
 
     pub fn datetype_from_string_with_templ_and_chrono_pattern(
         value: &str,
-        templ_type: &Value,
+        templ_type: &ValueType,
         chrono_pattern: &str,
-    ) -> Result<Option<Value>> {
+    ) -> Result<Value> {
         if value.is_empty() || value.to_lowercase() == "null" {
-            return Ok(None);
+            // TODO: handle other to-none-options
+            return Ok(Value::None);
         }
         match templ_type {
-            Value::NaiveDate(_) => Ok(Some(Value::parse_naive_date_from_str(
-                value,
-                chrono_pattern,
-            )?)),
-            Value::NaiveDateTime(_) => Ok(Some(Value::parse_naive_date_time_from_str(
-                value,
-                chrono_pattern,
-            )?)),
-            Value::DateTime(_) => Ok(Some(Value::parse_date_time_from_str(
-                value,
-                chrono_pattern,
-            )?)),
+            ValueType::NaiveDate => Value::parse_naive_date_from_str(value, chrono_pattern),
+            ValueType::NaiveDateTime => {
+                Value::parse_naive_date_time_from_str(value, chrono_pattern)
+            }
+            ValueType::DateTime => Value::parse_date_time_from_str(value, chrono_pattern),
             _ => Err(VenumError::Parsing(ParseError::ValueFromStringFailed {
                 src_value: String::from(value),
                 target_type: format!("{}{}", VAL_ENUM_NAME, templ_type),
@@ -603,58 +665,58 @@ mod tests {
     use super::*;
 
     mod value_name {
-        use crate::venum::{Value, ValueName};
+        use crate::venum::{Value, ValueType};
 
         #[test]
         fn test_from_venum_value_variant_name_for_value() {
-            assert_eq!(Value::char_default(), ValueName::Char.into());
-            assert_eq!(Value::string_default(), ValueName::String.into());
-            assert_eq!(Value::int8_default(), ValueName::Int8.into());
-            assert_eq!(Value::int16_default(), ValueName::Int16.into());
-            assert_eq!(Value::int32_default(), ValueName::Int32.into());
-            assert_eq!(Value::int64_default(), ValueName::Int64.into());
-            assert_eq!(Value::int128_default(), ValueName::Int128.into());
-            assert_eq!(Value::uint8_default(), ValueName::UInt8.into());
-            assert_eq!(Value::uint16_default(), ValueName::UInt16.into());
-            assert_eq!(Value::uint32_default(), ValueName::UInt32.into());
-            assert_eq!(Value::uint64_default(), ValueName::UInt64.into());
-            assert_eq!(Value::uint128_default(), ValueName::UInt128.into());
-            assert_eq!(Value::float32_default(), ValueName::Float32.into());
-            assert_eq!(Value::float64_default(), ValueName::Float64.into());
-            assert_eq!(Value::bool_default(), ValueName::Bool.into());
-            assert_eq!(Value::decimal_default(), ValueName::Decimal.into());
-            assert_eq!(Value::naive_date_default(), ValueName::NaiveDate.into());
+            assert_eq!(Value::char_default(), ValueType::Char.into());
+            assert_eq!(Value::string_default(), ValueType::String.into());
+            assert_eq!(Value::int8_default(), ValueType::Int8.into());
+            assert_eq!(Value::int16_default(), ValueType::Int16.into());
+            assert_eq!(Value::int32_default(), ValueType::Int32.into());
+            assert_eq!(Value::int64_default(), ValueType::Int64.into());
+            assert_eq!(Value::int128_default(), ValueType::Int128.into());
+            assert_eq!(Value::uint8_default(), ValueType::UInt8.into());
+            assert_eq!(Value::uint16_default(), ValueType::UInt16.into());
+            assert_eq!(Value::uint32_default(), ValueType::UInt32.into());
+            assert_eq!(Value::uint64_default(), ValueType::UInt64.into());
+            assert_eq!(Value::uint128_default(), ValueType::UInt128.into());
+            assert_eq!(Value::float32_default(), ValueType::Float32.into());
+            assert_eq!(Value::float64_default(), ValueType::Float64.into());
+            assert_eq!(Value::bool_default(), ValueType::Bool.into());
+            assert_eq!(Value::decimal_default(), ValueType::Decimal.into());
+            assert_eq!(Value::naive_date_default(), ValueType::NaiveDate.into());
             assert_eq!(
                 Value::naive_date_time_default(),
-                ValueName::NaiveDateTime.into()
+                ValueType::NaiveDateTime.into()
             );
-            assert_eq!(Value::date_time_default(), ValueName::DateTime.into());
+            assert_eq!(Value::date_time_default(), ValueType::DateTime.into());
         }
 
         #[test]
         fn test_from_venum_value_variant_name_ref_for_value() {
-            assert_eq!(Value::char_default(), (&ValueName::Char).into());
-            assert_eq!(Value::string_default(), (&ValueName::String).into());
-            assert_eq!(Value::int8_default(), (&ValueName::Int8).into());
-            assert_eq!(Value::int16_default(), (&ValueName::Int16).into());
-            assert_eq!(Value::int32_default(), (&ValueName::Int32).into());
-            assert_eq!(Value::int64_default(), (&ValueName::Int64).into());
-            assert_eq!(Value::int128_default(), (&ValueName::Int128).into());
-            assert_eq!(Value::uint8_default(), (&ValueName::UInt8).into());
-            assert_eq!(Value::uint16_default(), (&ValueName::UInt16).into());
-            assert_eq!(Value::uint32_default(), (&ValueName::UInt32).into());
-            assert_eq!(Value::uint64_default(), (&ValueName::UInt64).into());
-            assert_eq!(Value::uint128_default(), (&ValueName::UInt128).into());
-            assert_eq!(Value::float32_default(), (&ValueName::Float32).into());
-            assert_eq!(Value::float64_default(), (&ValueName::Float64).into());
-            assert_eq!(Value::bool_default(), (&ValueName::Bool).into());
-            assert_eq!(Value::decimal_default(), (&ValueName::Decimal).into());
-            assert_eq!(Value::naive_date_default(), (&ValueName::NaiveDate).into());
+            assert_eq!(Value::char_default(), (&ValueType::Char).into());
+            assert_eq!(Value::string_default(), (&ValueType::String).into());
+            assert_eq!(Value::int8_default(), (&ValueType::Int8).into());
+            assert_eq!(Value::int16_default(), (&ValueType::Int16).into());
+            assert_eq!(Value::int32_default(), (&ValueType::Int32).into());
+            assert_eq!(Value::int64_default(), (&ValueType::Int64).into());
+            assert_eq!(Value::int128_default(), (&ValueType::Int128).into());
+            assert_eq!(Value::uint8_default(), (&ValueType::UInt8).into());
+            assert_eq!(Value::uint16_default(), (&ValueType::UInt16).into());
+            assert_eq!(Value::uint32_default(), (&ValueType::UInt32).into());
+            assert_eq!(Value::uint64_default(), (&ValueType::UInt64).into());
+            assert_eq!(Value::uint128_default(), (&ValueType::UInt128).into());
+            assert_eq!(Value::float32_default(), (&ValueType::Float32).into());
+            assert_eq!(Value::float64_default(), (&ValueType::Float64).into());
+            assert_eq!(Value::bool_default(), (&ValueType::Bool).into());
+            assert_eq!(Value::decimal_default(), (&ValueType::Decimal).into());
+            assert_eq!(Value::naive_date_default(), (&ValueType::NaiveDate).into());
             assert_eq!(
                 Value::naive_date_time_default(),
-                (&ValueName::NaiveDateTime).into()
+                (&ValueType::NaiveDateTime).into()
             );
-            assert_eq!(Value::date_time_default(), (&ValueName::DateTime).into());
+            assert_eq!(Value::date_time_default(), (&ValueType::DateTime).into());
         }
     }
 
@@ -1084,7 +1146,7 @@ mod tests {
         use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime, TimeZone};
         use rust_decimal::Decimal;
 
-        use crate::venum::Value;
+        use crate::venum::{Value, ValueType};
 
         #[test]
         pub fn test_impl_from_type_for_value() {
@@ -1242,9 +1304,15 @@ mod tests {
         }
 
         #[test]
+        pub fn none_from_str_and_templ_ok() {
+            let test = Value::from_string_with_templ("", &ValueType::Int8);
+            assert_eq!(Ok(Value::None), test);
+        }
+
+        #[test]
         pub fn int8_from_str_and_templ_ok() {
-            let test = Value::from_string_with_templ("10", &Value::int8_default());
-            assert_eq!(Ok(Some(Value::Int8(10))), test);
+            let test = Value::from_string_with_templ("10", &ValueType::Int8);
+            assert_eq!(Ok(Value::Int8(10)), test);
         }
 
         #[test]
@@ -1252,7 +1320,7 @@ mod tests {
             expected = "Parsing(ValueFromStringFailed { src_value: \"false\", target_type: \"Value::Int8\", details: None })"
         )]
         pub fn int8_from_str_and_templ_err() {
-            Value::from_string_with_templ("false", &Value::int8_default()).unwrap();
+            Value::from_string_with_templ("false", &ValueType::Int8).unwrap();
         }
     }
 }
