@@ -237,7 +237,7 @@ macro_rules! from_type_string {
             //       In any case, we -for now- only to this for empty (source)
             //       strings and not for stuff like "null" Strings, as this
             //       could really be a value ...for some reason.
-            if v.is_empty() {
+            if v.trim().is_empty() {
                 return Ok(Value::None);
             }
 
@@ -546,6 +546,9 @@ impl Value {
             _ => false,
         }
     }
+    pub fn is_some(&self) -> bool {
+        !self.is_none()
+    }
     is_type!(is_char, Char);
     is_type!(is_string, String);
     is_type!(is_int8, Int8);
@@ -572,9 +575,10 @@ impl Value {
     /// NOTE2: For date types (NaiveDate, NaiveDateTime, DateTime) only the most common cases (iso8601_ymd, iso8601_ymdhms and rfc3339) have been implemented. Every other
     ///        format _will_ error!
     pub fn from_string_with_templ(value: &str, type_info: &ValueType) -> Result<Value> {
-        if value.is_empty() || value.to_lowercase() == "null" {
+        let tmp = value.trim();
+        if tmp.is_empty() || tmp.to_lowercase() == "null" {
             // TODO: handle other to-none-options
-            return Ok(Value::None);
+            return Ok(Value::None); // Caller must remember the desired type!
         }
         match type_info {
             ValueType::Char => Value::parse_char_from_str(value),
@@ -609,9 +613,10 @@ impl Value {
         templ_type: &ValueType,
         chrono_pattern: &str,
     ) -> Result<Value> {
-        if value.is_empty() || value.to_lowercase() == "null" {
+        let tmp = value.trim();
+        if tmp.is_empty() || tmp.to_lowercase() == "null" {
             // TODO: handle other to-none-options
-            return Ok(Value::None);
+            return Ok(Value::None); // Caller must remember the desired type!
         }
         match templ_type {
             ValueType::NaiveDate => Value::parse_naive_date_from_str(value, chrono_pattern),
@@ -650,6 +655,8 @@ impl Value {
     pub fn is_some_float_type(&self) -> bool {
         self.is_float32() || self.is_float64()
     }
+
+    // TODO: convertion fns between the different variants
 }
 
 impl Default for Value {
