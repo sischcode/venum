@@ -19,5 +19,5 @@ strum_macros = "0.24"
 serde = { version = "1.0", features = ["derive"], optional = true}
 
 [features]
-# default = ["serde"]
+default = ["serde"]
 serde = ["dep:serde", "chrono/serde"]
