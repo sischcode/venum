@@ -231,7 +231,7 @@ macro_rules! from_type_string {
             //       want an empty string to be mapped to None? Is there a
             //       case where an empty string somewhere is actually a real,
             //       meaningful value?
-            //       In any case, we -for now- only to this for empty (source)
+            //       In any case, we -for now- only do this for empty (source)
             //       strings and not for stuff like "null" Strings, as this
             //       could really be a value ...for some reason.
             if v.trim().is_empty() {
@@ -563,12 +563,12 @@ impl Value {
     is_type!(is_naive_date_time, NaiveDateTime);
     is_type!(is_date_time, DateTime);
 
-    /// NOTE: We decided agains Option<String> here as the type of the value since the intention is to create a typed version of a stringy-input we read from some CSV.
+    /// NOTE: We decided against Option<String> here as the type of the value since the intention is to create a typed version of a stringy-input we read from some CSV.
     ///       In that case, when a CSV column contains a "" as an entry, e.g. like this: `a,,c` or this `"a","","c"`, where the middle column would translate to empty / "",
     ///       we map it to a None internally, representing the absence of data.
     /// NOTE2: For date types (NaiveDate, NaiveDateTime, DateTime) only the most common cases (iso8601_ymd, iso8601_ymdhms and rfc3339) have been implemented. Every other
     ///        format _will_ error!
-    pub fn from_string_with_templ(value: &str, type_info: &ValueType) -> Result<Value> {
+    pub fn from_str_and_type(value: &str, type_info: &ValueType) -> Result<Value> {
         let tmp = value.trim();
         if tmp.is_empty() || tmp.to_lowercase() == "null" {
             // TODO: handle other to-none-options
@@ -602,7 +602,7 @@ impl Value {
         }
     }
 
-    pub fn datetype_from_string_with_templ_and_chrono_pattern(
+    pub fn datetype_from_str_and_type_and_chrono_pattern(
         value: &str,
         templ_type: &ValueType,
         chrono_pattern: &str,
@@ -1306,13 +1306,13 @@ mod tests {
 
         #[test]
         pub fn none_from_str_and_templ_ok() {
-            let test = Value::from_string_with_templ("", &ValueType::Int8);
+            let test = Value::from_str_and_type("", &ValueType::Int8);
             assert_eq!(Ok(Value::None), test);
         }
 
         #[test]
         pub fn int8_from_str_and_templ_ok() {
-            let test = Value::from_string_with_templ("10", &ValueType::Int8);
+            let test = Value::from_str_and_type("10", &ValueType::Int8);
             assert_eq!(Ok(Value::Int8(10)), test);
         }
 
@@ -1321,7 +1321,7 @@ mod tests {
             expected = "Parsing(ValueFromStringFailed { src_value: \"false\", target_type: \"Value::Int8\", details: None })"
         )]
         pub fn int8_from_str_and_templ_err() {
-            Value::from_string_with_templ("false", &ValueType::Int8).unwrap();
+            Value::from_str_and_type("false", &ValueType::Int8).unwrap();
         }
     }
 }
