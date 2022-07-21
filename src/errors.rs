@@ -3,7 +3,7 @@ use thiserror::Error;
 
 #[derive(Debug, PartialEq, Clone, Display)]
 pub enum VenumError {
-    Generic { msg: String },
+    Generic { msg: String }, // TODO: can we get a nice error message here as well?
     Parsing(ParseError),
     Conversion(ConversionError),
 }
