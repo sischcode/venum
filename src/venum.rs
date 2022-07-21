@@ -38,32 +38,32 @@ pub enum ValueType {
 
 impl ValueType {
     pub fn is_some_date_type(&self) -> bool {
-        match self {
-            ValueType::NaiveDate | ValueType::NaiveDateTime | ValueType::DateTime => true,
-            _ => false,
-        }
+        matches!(
+            self,
+            ValueType::NaiveDate | ValueType::NaiveDateTime | ValueType::DateTime
+        )
     }
 
     pub fn is_some_signed_int_type(&self) -> bool {
-        match self {
+        matches!(
+            self,
             ValueType::Int8
-            | ValueType::Int16
-            | ValueType::Int32
-            | ValueType::Int64
-            | ValueType::Int128 => true,
-            _ => false,
-        }
+                | ValueType::Int16
+                | ValueType::Int32
+                | ValueType::Int64
+                | ValueType::Int128
+        )
     }
 
     pub fn is_some_unsigned_int_type(&self) -> bool {
-        match self {
+        matches!(
+            self,
             ValueType::UInt8
-            | ValueType::UInt16
-            | ValueType::UInt32
-            | ValueType::UInt64
-            | ValueType::UInt128 => true,
-            _ => false,
-        }
+                | ValueType::UInt16
+                | ValueType::UInt32
+                | ValueType::UInt64
+                | ValueType::UInt128
+        )
     }
 
     pub fn is_some_int_type(&self) -> bool {
@@ -71,10 +71,7 @@ impl ValueType {
     }
 
     pub fn is_some_float_type(&self) -> bool {
-        match self {
-            ValueType::Float32 | ValueType::Float64 => true,
-            _ => false,
-        }
+        matches!(self, ValueType::Float32 | ValueType::Float64)
     }
 }
 
@@ -541,10 +538,7 @@ impl Value {
     }
 
     pub fn is_none(&self) -> bool {
-        match self {
-            Value::None => true,
-            _ => false,
-        }
+        matches!(self, Value::None)
     }
     pub fn is_some(&self) -> bool {
         !self.is_none()
