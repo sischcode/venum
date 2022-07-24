@@ -227,16 +227,12 @@ impl_try_from_value_ref_for_clone_type!(DateTime, DateTime<FixedOffset>);
 macro_rules! from_type_string {
     ($fn_name:ident, $enum_type:ident, $for_type:ty) => {
         pub fn $fn_name(v: &str) -> Result<Value> {
-            // TODO: is this a good idea? Can it ever be, that we do not(!)
-            //       want an empty string to be mapped to None? Is there a
-            //       case where an empty string somewhere is actually a real,
-            //       meaningful value?
-            //       In any case, we -for now- only do this for empty (source)
-            //       strings and not for stuff like "null" Strings, as this
-            //       could really be a value ...for some reason.
-            if v.trim().is_empty() {
-                return Ok(Value::None);
-            }
+            // We don't do something like:
+            // if v.is_empty() {
+            //     return Ok(Value::None);
+            // }
+            // here, with the reasoning that this should rather fail than to
+            // magically give back a Value::None
 
             let temp = v.parse::<$for_type>().map_err(|_| {
                 VenumError::Parsing(ParseError::ValueFromStringFailed {
@@ -566,64 +562,92 @@ impl Value {
     /// NOTE: We decided against Option<String> here as the type of the value since the intention is to create a typed version of a stringy-input we read from some CSV.
     ///       In that case, when a CSV column contains a "" as an entry, e.g. like this: `a,,c` or this `"a","","c"`, where the middle column would translate to empty / "",
     ///       we map it to a None internally, representing the absence of data.
-    /// NOTE2: For date types (NaiveDate, NaiveDateTime, DateTime) only the most common cases (iso8601_ymd, iso8601_ymdhms and rfc3339) have been implemented. Every other
-    ///        format _will_ error!
-    pub fn from_str_and_type(value: &str, type_info: &ValueType) -> Result<Value> {
-        let tmp = value.trim();
-        if tmp.is_empty() || tmp.to_lowercase() == "null" {
-            // TODO: handle other to-none-options
+    /// NOTE2: For date types, when no chrono_pattern is supplied, parsing is still tried, using: iso8601_ymd, iso8601_ymdhms and rfc3339.
+    pub fn from_str_and_type_with_chrono_pattern_with_none_map(
+        value: &str,
+        target_value_type: &ValueType,
+        chrono_pattern: Option<&str>,
+        as_none: Option<Vec<&str>>,
+    ) -> Result<Value> {
+        if value.is_empty() {
             return Ok(Value::None); // Caller must remember the desired type!
         }
-        match type_info {
-            ValueType::Char => Value::parse_char_from_str(value),
-            ValueType::String => Ok(Value::String(value.into())),
+        if let Some(none_check_vals) = as_none {
+            if !none_check_vals.is_empty() {
+                if none_check_vals.contains(&value) {
+                    return Ok(Value::None); // Caller must remember the desired type!
+                }
+            }
+        }
+        if let Some(chrono_pattern) = chrono_pattern {
+            match target_value_type {
+                ValueType::NaiveDate => Value::parse_naive_date_from_str(value, chrono_pattern),
+                ValueType::NaiveDateTime => {
+                    Value::parse_naive_date_time_from_str(value, &chrono_pattern)
+                }
+                ValueType::DateTime => Value::parse_date_time_from_str(value, chrono_pattern),
+                _ => Err(VenumError::Parsing(ParseError::ValueFromStringFailed {
+                    src_value: String::from(value),
+                    target_type: format!("{}{}", VAL_ENUM_NAME, target_value_type),
+                    details: Some(format!("Chrono pattern: {chrono_pattern}")),
+                })),
+            }
+        } else {
+            match target_value_type {
+                ValueType::Char => Value::parse_char_from_str(value),
+                ValueType::String => Ok(Value::String(value.into())),
 
-            ValueType::Int8 => Value::parse_int8_from_str(value),
-            ValueType::Int16 => Value::parse_int16_from_str(value),
-            ValueType::Int32 => Value::parse_int32_from_str(value),
-            ValueType::Int64 => Value::parse_int64_from_str(value),
-            ValueType::Int128 => Value::parse_int128_from_str(value),
+                ValueType::Int8 => Value::parse_int8_from_str(value),
+                ValueType::Int16 => Value::parse_int16_from_str(value),
+                ValueType::Int32 => Value::parse_int32_from_str(value),
+                ValueType::Int64 => Value::parse_int64_from_str(value),
+                ValueType::Int128 => Value::parse_int128_from_str(value),
 
-            ValueType::UInt8 => Value::parse_uint8_from_str(value),
-            ValueType::UInt16 => Value::parse_uint16_from_str(value),
-            ValueType::UInt32 => Value::parse_uint32_from_str(value),
-            ValueType::UInt64 => Value::parse_uint64_from_str(value),
-            ValueType::UInt128 => Value::parse_uint128_from_str(value),
+                ValueType::UInt8 => Value::parse_uint8_from_str(value),
+                ValueType::UInt16 => Value::parse_uint16_from_str(value),
+                ValueType::UInt32 => Value::parse_uint32_from_str(value),
+                ValueType::UInt64 => Value::parse_uint64_from_str(value),
+                ValueType::UInt128 => Value::parse_uint128_from_str(value),
 
-            ValueType::Float32 => Value::parse_float32_from_str(value),
-            ValueType::Float64 => Value::parse_float64_from_str(value),
+                ValueType::Float32 => Value::parse_float32_from_str(value),
+                ValueType::Float64 => Value::parse_float64_from_str(value),
 
-            ValueType::Bool => Value::parse_bool_from_str(value),
-            ValueType::Decimal => Value::parse_decimal_from_str(value),
+                ValueType::Bool => Value::parse_bool_from_str(value),
+                ValueType::Decimal => Value::parse_decimal_from_str(value),
 
-            ValueType::NaiveDate => Value::parse_naive_date_from_str_iso8601_ymd(value),
-            ValueType::NaiveDateTime => Value::parse_naive_date_time_from_str_iso8601_ymdhms(value),
-            ValueType::DateTime => Value::parse_date_time_from_str_rfc3339(value),
+                ValueType::NaiveDate => Value::parse_naive_date_from_str_iso8601_ymd(value),
+                ValueType::NaiveDateTime => {
+                    Value::parse_naive_date_time_from_str_iso8601_ymdhms(value)
+                }
+                ValueType::DateTime => Value::parse_date_time_from_str_rfc3339(value),
+            }
         }
     }
 
-    pub fn datetype_from_str_and_type_and_chrono_pattern(
+    /// NOTE: We decided against Option<String> here as the type of the value since the intention is to create a typed version of a stringy-input we read from some CSV.
+    ///       In that case, when a CSV column contains a "" as an entry, e.g. like this: `a,,c` or this `"a","","c"`, where the middle column would translate to empty / "",
+    ///       we map it to a None internally, representing the absence of data.
+
+    pub fn from_str_and_type(value: &str, target_value_type: &ValueType) -> Result<Value> {
+        Self::from_str_and_type_with_chrono_pattern_with_none_map(
+            value,
+            target_value_type,
+            None,
+            None,
+        )
+    }
+
+    pub fn from_str_and_type_with_chrono_pattern(
         value: &str,
-        templ_type: &ValueType,
+        target_value_type: &ValueType,
         chrono_pattern: &str,
     ) -> Result<Value> {
-        let tmp = value.trim();
-        if tmp.is_empty() || tmp.to_lowercase() == "null" {
-            // TODO: handle other to-none-options
-            return Ok(Value::None); // Caller must remember the desired type!
-        }
-        match templ_type {
-            ValueType::NaiveDate => Value::parse_naive_date_from_str(value, chrono_pattern),
-            ValueType::NaiveDateTime => {
-                Value::parse_naive_date_time_from_str(value, chrono_pattern)
-            }
-            ValueType::DateTime => Value::parse_date_time_from_str(value, chrono_pattern),
-            _ => Err(VenumError::Parsing(ParseError::ValueFromStringFailed {
-                src_value: String::from(value),
-                target_type: format!("{}{}", VAL_ENUM_NAME, templ_type),
-                details: Some(format!("Chrono pattern: {chrono_pattern}")),
-            })),
-        }
+        Self::from_str_and_type_with_chrono_pattern_with_none_map(
+            value,
+            target_value_type,
+            Some(chrono_pattern),
+            None,
+        )
     }
 
     pub fn is_some_date_type(&self) -> bool {
@@ -665,7 +689,7 @@ pub type OptValue = Option<Value>;
 mod tests {
     use super::*;
 
-    mod value_name {
+    mod value_type {
         use crate::venum::{Value, ValueType};
 
         #[test]
@@ -1305,13 +1329,13 @@ mod tests {
         }
 
         #[test]
-        pub fn none_from_str_and_templ_ok() {
+        pub fn from_str_and_type_int8_ok_none() {
             let test = Value::from_str_and_type("", &ValueType::Int8);
             assert_eq!(Ok(Value::None), test);
         }
 
         #[test]
-        pub fn int8_from_str_and_templ_ok() {
+        pub fn from_str_and_type_int8_ok() {
             let test = Value::from_str_and_type("10", &ValueType::Int8);
             assert_eq!(Ok(Value::Int8(10)), test);
         }
@@ -1320,8 +1344,41 @@ mod tests {
         #[should_panic(
             expected = "Parsing(ValueFromStringFailed { src_value: \"false\", target_type: \"Value::Int8\", details: None })"
         )]
-        pub fn int8_from_str_and_templ_err() {
+        pub fn from_str_and_type_int8_err() {
             Value::from_str_and_type("false", &ValueType::Int8).unwrap();
+        }
+
+        #[test]
+        pub fn from_str_and_type_with_chrono_naive_date_ok_none() {
+            let test =
+                Value::from_str_and_type_with_chrono_pattern("", &ValueType::NaiveDate, "%d.%m.%Y");
+            assert_eq!(Ok(Value::None), test);
+        }
+
+        #[test]
+        pub fn from_str_and_type_with_chrono_naive_date_ok() {
+            let test = Value::from_str_and_type_with_chrono_pattern(
+                "31.12.2022",
+                &ValueType::NaiveDate,
+                "%d.%m.%Y",
+            );
+            assert_eq!(
+                Ok(Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31))),
+                test
+            );
+        }
+
+        #[test]
+        #[should_panic(
+            expected = "Parsing(ValueFromStringFailed { src_value: \"foobar\", target_type: \"Value::NaiveDate\", details: Some(\"Chrono pattern: %d.%m.%Y. Original error:"
+        )]
+        pub fn from_str_and_type_with_chrono_naive_date_err() {
+            Value::from_str_and_type_with_chrono_pattern(
+                "foobar",
+                &ValueType::NaiveDate,
+                "%d.%m.%Y",
+            )
+            .unwrap();
         }
     }
 }
