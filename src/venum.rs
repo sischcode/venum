@@ -624,10 +624,6 @@ impl Value {
         }
     }
 
-    /// NOTE: We decided against Option<String> here as the type of the value since the intention is to create a typed version of a stringy-input we read from some CSV.
-    ///       In that case, when a CSV column contains a "" as an entry, e.g. like this: `a,,c` or this `"a","","c"`, where the middle column would translate to empty / "",
-    ///       we map it to a None internally, representing the absence of data.
-
     pub fn from_str_and_type(value: &str, target_value_type: &ValueType) -> Result<Value> {
         Self::from_str_and_type_with_chrono_pattern_with_none_map(
             value,
@@ -647,6 +643,19 @@ impl Value {
             target_value_type,
             Some(chrono_pattern),
             None,
+        )
+    }
+
+    pub fn from_str_and_type_with_none_map(
+        value: &str,
+        target_value_type: &ValueType,
+        as_none: Vec<&str>,
+    ) -> Result<Value> {
+        Self::from_str_and_type_with_chrono_pattern_with_none_map(
+            value,
+            target_value_type,
+            None,
+            Some(as_none),
         )
     }
 
