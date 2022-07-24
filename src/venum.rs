@@ -595,7 +595,7 @@ impl Value {
         } else {
             match target_value_type {
                 ValueType::Char => Value::parse_char_from_str(value),
-                ValueType::String => Ok(Value::String(value.into())),
+                ValueType::String => Ok(Value::String(value.to_owned())),
 
                 ValueType::Int8 => Value::parse_int8_from_str(value),
                 ValueType::Int16 => Value::parse_int16_from_str(value),
