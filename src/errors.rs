@@ -31,6 +31,12 @@ pub enum ConversionError {
         target_type: String,
         details: Option<String>,
     },
+
+    #[error("{msg:?}")]
+    Generic { msg: String },
+
+    #[error("{src_value:?} ({src_type:?}) not representable as Decimal")]
+    NotRepresentableAsDecimal { src_type: String, src_value: String },
 }
 
 pub type Result<T> = std::result::Result<T, VenumError>;

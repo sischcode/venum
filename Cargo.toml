@@ -12,7 +12,7 @@ rust-version = "1.62"
 [dependencies]
 thiserror = "1.0"
 chrono = "0.4"
-rust_decimal = "1.22"
+rust_decimal = "1.25"
 strum_macros = "0.24"
 
 # This is behind the (implicit) feature: "dep:serde"
@@ -21,3 +21,4 @@ serde = { version = "1.0", features = ["derive"], optional = true}
 [features]
 default = ["serde"]
 serde = ["dep:serde", "chrono/serde"]
+serde_decimal = ["serde", "rust_decimal/serde-with-float", "rust_decimal/serde-with-str", "rust_decimal/serde-with-arbitrary-precision"]

@@ -1,6 +1,6 @@
 use std::convert::From;
 
-use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime};
+use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime, TimeZone};
 use rust_decimal::{prelude::FromPrimitive, Decimal};
 use strum_macros::Display; // used to generate names for the enum variants. Used only for error messages (as of now).
 
@@ -347,7 +347,11 @@ impl Value {
 
     /// Default is: 1970-01-01 00:00:00 +00:00 (formatted as: 1970-01-01T00:00:00+00:00)
     pub fn date_time_default() -> Value {
-        Value::DateTime(DateTime::parse_from_rfc3339("1970-01-01T00:00:00+00:00").unwrap())
+        Value::DateTime(
+            FixedOffset::east(0) // east = +; west = -
+                .ymd(1970, 1, 1)
+                .and_hms_milli(0, 0, 0, 0),
+        )
     }
 
     from_type_string!(parse_char_from_str, Char, char);
@@ -496,41 +500,92 @@ impl Value {
         Ok(Value::DateTime(temp))
     }
 
+    // For all decimal_from_XXX we assume it is better to error, instead of
     pub fn decimal_from_i8(v: i8) -> Value {
-        Value::Decimal(Decimal::from_i16(v as i16).unwrap()) // I can't think of a case where an i8 cannot be represented by a decimal
+        Value::Decimal(Decimal::from(v))
     }
     pub fn decimal_from_i16(v: i16) -> Value {
-        Value::Decimal(Decimal::from_i16(v).unwrap()) // I can't think of a case where an i16 cannot be represented by a decimal
+        Value::Decimal(Decimal::from(v))
     }
     pub fn decimal_from_i32(v: i32) -> Value {
-        Value::Decimal(Decimal::from_i32(v).unwrap()) // I can't think of a case where an i32 cannot be represented by a decimal
+        Value::Decimal(Decimal::from(v))
     }
     pub fn decimal_from_i64(v: i64) -> Value {
-        Value::Decimal(Decimal::from_i64(v).unwrap()) // I can't think of a case where an i64 cannot be represented by a decimal
+        Value::Decimal(Decimal::from(v))
     }
-    pub fn decimal_from_i128(v: i128) -> Value {
-        Value::Decimal(Decimal::from_i128(v).unwrap()) // I can't think of a case where an i128 cannot be represented by a decimal
+    pub fn decimal_from_i128(v: i128) -> Result<Value> {
+        let tmp = Decimal::from_i128(v).ok_or_else(|| {
+            VenumError::Conversion(ConversionError::NotRepresentableAsDecimal {
+                src_type: String::from("i128"),
+                src_value: v.to_string(),
+            })
+        })?;
+        Ok(Value::Decimal(tmp))
     }
     pub fn decimal_from_u8(v: u8) -> Value {
-        Value::Decimal(Decimal::from_u16(v as u16).unwrap()) // I can't think of a case where an i8 cannot be represented by a decimal
+        Value::Decimal(Decimal::from(v))
     }
     pub fn decimal_from_u16(v: u16) -> Value {
-        Value::Decimal(Decimal::from_u16(v).unwrap()) // I can't think of a case where an i16 cannot be represented by a decimal
+        Value::Decimal(Decimal::from(v))
     }
     pub fn decimal_from_u32(v: u32) -> Value {
-        Value::Decimal(Decimal::from_u32(v).unwrap()) // I can't think of a case where an i32 cannot be represented by a decimal
+        Value::Decimal(Decimal::from(v))
     }
     pub fn decimal_from_u64(v: u64) -> Value {
-        Value::Decimal(Decimal::from_u64(v).unwrap()) // I can't think of a case where an i64 cannot be represented by a decimal
+        Value::Decimal(Decimal::from(v))
     }
-    pub fn decimal_from_u128(v: u128) -> Value {
-        Value::Decimal(Decimal::from_u128(v).unwrap()) // I can't think of a case where an i128 cannot be represented by a decimal
+    pub fn decimal_from_u128(v: u128) -> Result<Value> {
+        let tmp = Decimal::from_u128(v).ok_or_else(|| {
+            VenumError::Conversion(ConversionError::NotRepresentableAsDecimal {
+                src_type: String::from("u128"),
+                src_value: v.to_string(),
+            })
+        })?;
+        Ok(Value::Decimal(tmp))
     }
-    pub fn decimal_from_f32(v: f32) -> Value {
-        Value::Decimal(Decimal::from_f32(v).unwrap()) // I can't think of a case where a f32 cannot be represented by a decimal
+    pub fn decimal_from_isize(v: isize) -> Value {
+        Value::Decimal(Decimal::from(v))
     }
-    pub fn decimal_from_f64(v: f64) -> Value {
-        Value::Decimal(Decimal::from_f64(v).unwrap()) // I can't think of a case where a f64 cannot be represented by a decimal
+    pub fn decimal_from_usize(v: usize) -> Value {
+        Value::Decimal(Decimal::from(v))
+    }
+    pub fn decimal_from_f32(v: f32) -> Result<Value> {
+        let tmp = Decimal::from_f32(v).ok_or_else(|| {
+            VenumError::Conversion(ConversionError::NotRepresentableAsDecimal {
+                src_type: String::from("f32"),
+                src_value: v.to_string(),
+            })
+        })?;
+        Ok(Value::Decimal(tmp))
+    }
+    pub fn decimal_from_f64(v: f64) -> Result<Value> {
+        let tmp = Decimal::from_f64(v).ok_or_else(|| {
+            VenumError::Conversion(ConversionError::NotRepresentableAsDecimal {
+                src_type: String::from("f64"),
+                src_value: v.to_string(),
+            })
+        })?;
+        Ok(Value::Decimal(tmp))
+    }
+    // retain access bits / approximation
+    pub fn decimal_from_f32_retain(v: f32) -> Result<Value> {
+        let tmp = Decimal::from_f32_retain(v).ok_or_else(|| {
+            VenumError::Conversion(ConversionError::NotRepresentableAsDecimal {
+                src_type: String::from("f32"),
+                src_value: v.to_string(),
+            })
+        })?;
+        Ok(Value::Decimal(tmp))
+    }
+    // retain access bits / approximation
+    pub fn decimal_from_f64_retain(v: f64) -> Result<Value> {
+        let tmp = Decimal::from_f64_retain(v).ok_or_else(|| {
+            VenumError::Conversion(ConversionError::NotRepresentableAsDecimal {
+                src_type: String::from("f64"),
+                src_value: v.to_string(),
+            })
+        })?;
+        Ok(Value::Decimal(tmp))
     }
 
     pub fn is_none(&self) -> bool {
@@ -702,7 +757,7 @@ mod tests {
         use crate::venum::{Value, ValueType};
 
         #[test]
-        fn test_from_venum_value_variant_name_for_value() {
+        fn from_venum_value_variant_name_for_value() {
             assert_eq!(Value::char_default(), ValueType::Char.into());
             assert_eq!(Value::string_default(), ValueType::String.into());
             assert_eq!(Value::int8_default(), ValueType::Int8.into());
@@ -728,7 +783,7 @@ mod tests {
         }
 
         #[test]
-        fn test_from_venum_value_variant_name_ref_for_value() {
+        fn from_venum_value_variant_name_ref_for_value() {
             assert_eq!(Value::char_default(), (&ValueType::Char).into());
             assert_eq!(Value::string_default(), (&ValueType::String).into());
             assert_eq!(Value::int8_default(), (&ValueType::Int8).into());
@@ -758,22 +813,22 @@ mod tests {
         use super::*;
 
         #[test]
-        pub fn test_parse_int8_from_str() {
+        pub fn parse_int8_from_str() {
             assert_eq!(Ok(Value::Int8(-1)), Value::parse_int8_from_str("-1"));
         }
 
         #[test]
-        pub fn test_parse_int16_from_str() {
+        pub fn parse_int16_from_str() {
             assert_eq!(Ok(Value::Int16(-1)), Value::parse_int16_from_str("-1"));
         }
 
         #[test]
-        pub fn test_parse_int32_from_str() {
+        pub fn parse_int32_from_str() {
             assert_eq!(Ok(Value::Int32(-1)), Value::parse_int32_from_str("-1"));
         }
 
         #[test]
-        pub fn test_parse_int32_from_str_err() {
+        pub fn parse_int32_from_str_err() {
             let err_res = Value::parse_int32_from_str("foobar");
 
             let exp = Err(VenumError::Parsing(ParseError::ValueFromStringFailed {
@@ -785,17 +840,17 @@ mod tests {
         }
 
         #[test]
-        pub fn test_parse_int64_from_str() {
+        pub fn parse_int64_from_str() {
             assert_eq!(Ok(Value::Int64(-1)), Value::parse_int64_from_str("-1"));
         }
 
         #[test]
-        pub fn test_parse_int128_from_str() {
+        pub fn parse_int128_from_str() {
             assert_eq!(Ok(Value::Int128(-1)), Value::parse_int128_from_str("-1"));
         }
 
         #[test]
-        pub fn test_parse_uint8_from_str() {
+        pub fn parse_uint8_from_str() {
             assert_eq!(
                 Ok(Value::UInt8(1)),
                 Value::parse_uint8_from_str(&String::from("1"))
@@ -803,37 +858,37 @@ mod tests {
         }
 
         #[test]
-        pub fn test_parse_uint16_from_str() {
+        pub fn parse_uint16_from_str() {
             assert_eq!(Ok(Value::UInt16(1)), Value::parse_uint16_from_str("1"));
         }
 
         #[test]
-        pub fn test_parse_uint32_from_str() {
+        pub fn parse_uint32_from_str() {
             assert_eq!(Ok(Value::UInt32(1)), Value::parse_uint32_from_str("1"));
         }
 
         #[test]
-        pub fn test_parse_uint64_from_str() {
+        pub fn parse_uint64_from_str() {
             assert_eq!(Ok(Value::UInt64(1)), Value::parse_uint64_from_str("1"));
         }
 
         #[test]
-        pub fn test_parse_uint128_from_str() {
+        pub fn parse_uint128_from_str() {
             assert_eq!(Ok(Value::UInt128(1)), Value::parse_uint128_from_str("1"));
         }
 
         #[test]
-        pub fn test_parse_float32_from_str() {
+        pub fn parse_float32_from_str() {
             assert_eq!(Ok(Value::Float32(1.0)), Value::parse_float32_from_str("1"));
         }
 
         #[test]
-        pub fn test_parse_float64_from_str() {
+        pub fn parse_float64_from_str() {
             assert_eq!(Ok(Value::Float64(1.0)), Value::parse_float64_from_str("1"));
         }
 
         #[test]
-        pub fn test_parse_bool_from_str() {
+        pub fn parse_bool_from_str() {
             assert_eq!(Ok(Value::Bool(true)), Value::parse_bool_from_str("true"));
         }
 
@@ -841,7 +896,7 @@ mod tests {
         #[should_panic(
             expected = "Parsing(ValueFromStringFailed { src_value: \"1.123\", target_type: \"Value::Int32\", details: None })"
         )]
-        pub fn test_parse_i32_from_str_err() {
+        pub fn parse_i32_from_str_err() {
             Value::parse_int32_from_str("1.123").unwrap();
         }
 
@@ -849,7 +904,7 @@ mod tests {
         #[should_panic(
             expected = "Parsing(ValueFromStringFailed { src_value: \"1.123\", target_type: \"Value::UInt32\", details: None })"
         )]
-        pub fn test_parse_u32_from_str_err() {
+        pub fn parse_u32_from_str_err() {
             Value::parse_uint32_from_str("1.123").unwrap();
         }
 
@@ -857,7 +912,7 @@ mod tests {
         #[should_panic(
             expected = "Parsing(ValueFromStringFailed { src_value: \"foobar\", target_type: \"Value::Float32\", details: None })"
         )]
-        pub fn test_parse_f32_from_str_err() {
+        pub fn parse_f32_from_str_err() {
             Value::parse_float32_from_str("foobar").unwrap();
         }
 
@@ -865,12 +920,12 @@ mod tests {
         #[should_panic(
             expected = "Parsing(ValueFromStringFailed { src_value: \"foobar\", target_type: \"Value::Bool\", details: None })"
         )]
-        pub fn test_parse_bool_from_str_err() {
+        pub fn parse_bool_from_str_err() {
             Value::parse_bool_from_str("foobar").unwrap();
         }
 
         #[test]
-        pub fn test_parse_char_from_str() {
+        pub fn parse_char_from_str() {
             assert_eq!(Ok(Value::Char('a')), Value::parse_char_from_str("a"));
         }
 
@@ -878,7 +933,7 @@ mod tests {
         #[should_panic(
             expected = "Err(Parsing(ValueFromStringFailed { src_value: \"abc\", target_type: \"Value::Char\", details: None }))"
         )]
-        pub fn test_parse_char_from_str_err() {
+        pub fn parse_char_from_str_err() {
             assert_eq!(Ok(Value::Char('a')), Value::parse_char_from_str("abc"));
         }
     }
@@ -889,7 +944,7 @@ mod tests {
         use crate::venum::Value;
 
         #[test]
-        pub fn test_parse_decimal_from_str() {
+        pub fn parse_decimal_from_str() {
             assert_eq!(
                 Ok(Value::Decimal(Decimal::new(1123, 3))),
                 Value::parse_decimal_from_str("1.123")
@@ -900,7 +955,7 @@ mod tests {
         #[should_panic(
             expected = "Parsing(ValueFromStringFailed { src_value: \"foobar\", target_type: \"Value::Decimal\", details: Some(\"Original error: Invalid decimal: unknown character\") })"
         )]
-        pub fn test_parse_decimal_from_str_err() {
+        pub fn parse_decimal_from_str_err() {
             Value::parse_decimal_from_str("foobar").unwrap();
         }
     }
@@ -911,7 +966,7 @@ mod tests {
         use crate::venum::Value;
 
         #[test]
-        pub fn test_parse_naive_date_from_str_w_pattern() {
+        pub fn parse_naive_date_from_str_w_pattern() {
             let exp = NaiveDate::from_ymd(2022, 12, 31);
 
             assert_eq!(
@@ -928,7 +983,7 @@ mod tests {
         #[should_panic(
             expected = "Parsing(ValueFromStringFailed { src_value: \"2022-12-31 00:00\", target_type: \"Value::NaiveDate\", details: Some(\"Chrono pattern: %Y-%m-%d. Original error: trailing input\") })"
         )]
-        pub fn test_parse_naive_date_from_str_w_pattern_err_trailing_inp() {
+        pub fn parse_naive_date_from_str_w_pattern_err_trailing_inp() {
             Value::parse_naive_date_from_str("2022-12-31 00:00", "%Y-%m-%d").unwrap();
         }
 
@@ -936,12 +991,12 @@ mod tests {
         #[should_panic(
             expected = "Parsing(ValueFromStringFailed { src_value: \"2022-12-31\", target_type: \"Value::NaiveDate\", details: Some(\"Chrono pattern: %Y %m %d. Original error: input contains invalid characters\") })"
         )]
-        pub fn test_parse_naive_date_from_str_w_pattern_err_invalid_chars() {
+        pub fn parse_naive_date_from_str_w_pattern_err_invalid_chars() {
             Value::parse_naive_date_from_str("2022-12-31", "%Y %m %d").unwrap();
         }
 
         #[test]
-        pub fn test_parse_naive_date_from_str_iso8601_ymd() {
+        pub fn parse_naive_date_from_str_iso8601_ymd() {
             let exp = NaiveDate::from_ymd(2022, 12, 31);
 
             assert_eq!(
@@ -951,7 +1006,7 @@ mod tests {
         }
 
         #[test]
-        pub fn test_parse_naive_date_time_from_str_w_pattern() {
+        pub fn parse_naive_date_time_from_str_w_pattern() {
             let exp = NaiveDate::from_ymd(2022, 12, 31).and_hms(12, 11, 10);
 
             assert_eq!(
@@ -968,7 +1023,7 @@ mod tests {
         #[should_panic(
             expected = "Parsing(ValueFromStringFailed { src_value: \"2022-12-31 12:11:10 000\", target_type: \"Value::NaiveDateTime\", details: Some(\"Chrono pattern: %Y-%m-%d %H:%M:%S. Original error: trailing input\") }"
         )]
-        pub fn test_parse_naive_date_time_from_str_w_pattern_err_trailing_inp() {
+        pub fn parse_naive_date_time_from_str_w_pattern_err_trailing_inp() {
             Value::parse_naive_date_time_from_str("2022-12-31 12:11:10 000", "%Y-%m-%d %H:%M:%S")
                 .unwrap();
         }
@@ -977,13 +1032,13 @@ mod tests {
         #[should_panic(
             expected = "Parsing(ValueFromStringFailed { src_value: \"2022-12-31 12:11:10\", target_type: \"Value::NaiveDateTime\", details: Some(\"Chrono pattern: %Y-%m-%dT%H:%M:%S. Original error: input contains invalid characters\") }"
         )]
-        pub fn test_parse_naive_date_time_from_str_w_pattern_err_invalid_chars() {
+        pub fn parse_naive_date_time_from_str_w_pattern_err_invalid_chars() {
             Value::parse_naive_date_time_from_str("2022-12-31 12:11:10", "%Y-%m-%dT%H:%M:%S")
                 .unwrap();
         }
 
         #[test]
-        pub fn test_parse_naive_date_time_from_str_iso8601_ymdhms() {
+        pub fn parse_naive_date_time_from_str_iso8601_ymdhms() {
             let exp = NaiveDate::from_ymd(2022, 12, 31).and_hms(12, 11, 10);
 
             assert_eq!(
@@ -993,7 +1048,7 @@ mod tests {
         }
 
         #[test]
-        pub fn test_parse_date_time_from_str_w_pattern() {
+        pub fn parse_date_time_from_str_w_pattern() {
             let hour_secs = 3600;
             let exp: DateTime<FixedOffset> = FixedOffset::east(5 * hour_secs) // east = +; west = -
                 .ymd(2022, 12, 31)
@@ -1011,7 +1066,7 @@ mod tests {
         #[should_panic(
             expected = "Parsing(ValueFromStringFailed { src_value: \"2022-12-31T06:00:00\", target_type: \"Value::DateTime\", details: Some(\"Chrono pattern: %FT%T%:z. Original error: premature end of input\") }"
         )]
-        pub fn test_parse_date_time_from_str_w_pattern_err_prem_end_of_input() {
+        pub fn parse_date_time_from_str_w_pattern_err_prem_end_of_input() {
             Value::parse_date_time_from_str("2022-12-31T06:00:00", "%FT%T%:z").unwrap();
         }
 
@@ -1019,7 +1074,7 @@ mod tests {
         #[should_panic(
             expected = "Parsing(ValueFromStringFailed { src_value: \"2022-12-31T06:00:00\", target_type: \"Value::DateTime\", details: Some(\"Chrono pattern: %FT%T. Original error: input is not enough for unique date and time\") })"
         )]
-        pub fn test_parse_date_time_from_str_w_pattern_err_invalid_chars() {
+        pub fn parse_date_time_from_str_w_pattern_err_invalid_chars() {
             Value::parse_date_time_from_str("2022-12-31T06:00:00", "%FT%T").unwrap();
         }
 
@@ -1027,12 +1082,12 @@ mod tests {
         #[should_panic(
             expected = "Parsing(ValueFromStringFailed { src_value: \"2022-12-31T06:00:00+05:00\", target_type: \"Value::DateTime\", details: Some(\"Chrono pattern: %FT%T%. Original error: bad or unsupported format string\") }"
         )]
-        pub fn test_parse_date_time_from_str_w_pattern_err_bad_format_string() {
+        pub fn parse_date_time_from_str_w_pattern_err_bad_format_string() {
             Value::parse_date_time_from_str("2022-12-31T06:00:00+05:00", "%FT%T%").unwrap();
         }
 
         #[test]
-        pub fn test_parse_date_time_from_str_rfc3339() {
+        pub fn parse_date_time_from_str_rfc3339() {
             let hour_secs = 3600;
             let exp: DateTime<FixedOffset> = FixedOffset::east(5 * hour_secs) // east = +; west = -
                 .ymd(2022, 12, 31)
@@ -1047,7 +1102,7 @@ mod tests {
         }
 
         #[test]
-        pub fn test_parse_date_time_from_str_rfc2822() {
+        pub fn parse_date_time_from_str_rfc2822() {
             let hour_secs = 3600;
             let exp: DateTime<FixedOffset> = FixedOffset::east(2 * hour_secs) // east = +; west = -
                 .ymd(2003, 7, 1)
@@ -1069,82 +1124,82 @@ mod tests {
         use crate::venum::Value;
 
         #[test]
-        pub fn test_char_default() {
+        pub fn char_default() {
             assert_eq!(Value::Char('\0'), Value::char_default());
         }
 
         #[test]
-        pub fn test_string_default() {
+        pub fn string_default() {
             assert_eq!(Value::String("".to_string()), Value::string_default());
         }
 
         #[test]
-        pub fn test_int8_default() {
+        pub fn int8_default() {
             assert_eq!(Value::Int8(0), Value::int8_default());
         }
 
         #[test]
-        pub fn test_int16_default() {
+        pub fn int16_default() {
             assert_eq!(Value::Int16(0), Value::int16_default());
         }
 
         #[test]
-        pub fn test_int32_default() {
+        pub fn int32_default() {
             assert_eq!(Value::Int32(0), Value::int32_default());
         }
 
         #[test]
-        pub fn test_int64_default() {
+        pub fn int64_default() {
             assert_eq!(Value::Int64(0), Value::int64_default());
         }
 
         #[test]
-        pub fn test_int128_default() {
+        pub fn int128_default() {
             assert_eq!(Value::Int128(0), Value::int128_default());
         }
 
         #[test]
-        pub fn test_uint8_default() {
+        pub fn uint8_default() {
             assert_eq!(Value::UInt8(0), Value::uint8_default());
         }
 
         #[test]
-        pub fn test_uint16_default() {
+        pub fn uint16_default() {
             assert_eq!(Value::UInt16(0), Value::uint16_default());
         }
 
         #[test]
-        pub fn test_uint32_default() {
+        pub fn uint32_default() {
             assert_eq!(Value::UInt32(0), Value::uint32_default());
         }
 
         #[test]
-        pub fn test_uint64_default() {
+        pub fn uint64_default() {
             assert_eq!(Value::UInt64(0), Value::uint64_default());
         }
 
         #[test]
-        pub fn test_uint128_default() {
+        pub fn uint128_default() {
             assert_eq!(Value::UInt128(0), Value::uint128_default());
         }
 
         #[test]
-        pub fn test_float32_default() {
+        pub fn float32_default() {
             assert_eq!(Value::Float32(0.0), Value::float32_default());
         }
 
         #[test]
-        pub fn test_float64_default() {
+        pub fn float64_default() {
             assert_eq!(Value::Float64(0.0), Value::float64_default());
         }
 
         #[test]
-        pub fn test_bool_default() {
+        pub fn bool_default() {
             assert_eq!(Value::Bool(false), Value::bool_default());
         }
 
         #[test]
-        pub fn test_decimal_default() {
+        pub fn decimal_default() {
             assert_eq!(
                 Value::Decimal(Decimal::new(00, 1)),
                 Value::decimal_default()
@@ -1152,7 +1207,7 @@ mod tests {
         }
 
         #[test]
-        pub fn test_naive_date_default() {
+        pub fn naive_date_default() {
             assert_eq!(
                 Value::NaiveDate(NaiveDate::from_ymd(1970, 01, 01)),
                 Value::naive_date_default()
@@ -1160,7 +1215,7 @@ mod tests {
         }
 
         #[test]
-        pub fn test_naive_date_time_default() {
+        pub fn naive_date_time_default() {
             assert_eq!(
                 Value::NaiveDateTime(NaiveDate::from_ymd(1970, 01, 01).and_hms(00, 00, 00)),
                 Value::naive_date_time_default()
@@ -1168,11 +1223,164 @@ mod tests {
         }
 
         #[test]
-        pub fn test_date_time_default() {
+        pub fn date_time_default() {
             let exp: DateTime<FixedOffset> = FixedOffset::east(0) // east = +; west = -
                 .ymd(1970, 01, 01)
                 .and_hms(0, 0, 0);
             assert_eq!(Value::DateTime(exp), Value::date_time_default());
+        }
+    }
+
+    mod from_number_type_to_value_decimal {
+        use rust_decimal::Decimal;
+
+        use crate::{
+            errors::{ConversionError, VenumError},
+            venum::Value,
+        };
+
+        #[test]
+        pub fn from_signed_ints_max_to_value_decimal() {
+            assert_eq!(
+                Value::Decimal(Decimal::from(i8::MAX)),
+                Value::decimal_from_i8(i8::MAX)
+            );
+            assert_eq!(
+                Value::Decimal(Decimal::from(i16::MAX)),
+                Value::decimal_from_i16(i16::MAX)
+            );
+            assert_eq!(
+                Value::Decimal(Decimal::from(i32::MAX)),
+                Value::decimal_from_i32(i32::MAX)
+            );
+            assert_eq!(
+                Value::Decimal(Decimal::from(i64::MAX)),
+                Value::decimal_from_i64(i64::MAX)
+            );
+            assert_eq!(
+                Value::Decimal(Decimal::from(128_i128)),
+                Value::decimal_from_i128(128_i128).unwrap()
+            );
+            assert_eq!(
+                Err(VenumError::Conversion(
+                    ConversionError::NotRepresentableAsDecimal {
+                        src_type: String::from("i128"),
+                        src_value: i128::MAX.to_string()
+                    }
+                )),
+                Value::decimal_from_i128(i128::MAX)
+            );
+        }
+
+        #[test]
+        pub fn from_signed_ints_min_to_value_decimal() {
+            assert_eq!(
+                Value::Decimal(Decimal::from(i8::MIN)),
+                Value::decimal_from_i8(i8::MIN)
+            );
+            assert_eq!(
+                Value::Decimal(Decimal::from(i16::MIN)),
+                Value::decimal_from_i16(i16::MIN)
+            );
+            assert_eq!(
+                Value::Decimal(Decimal::from(i32::MIN)),
+                Value::decimal_from_i32(i32::MIN)
+            );
+            assert_eq!(
+                Value::Decimal(Decimal::from(i64::MIN)),
+                Value::decimal_from_i64(i64::MIN)
+            );
+            assert_eq!(
+                Value::Decimal(Decimal::from(-128_i128)),
+                Value::decimal_from_i128(-128_i128).unwrap()
+            );
+            // TODO: This panics, but I guess it shouldn't?
+            // assert_eq!(
+            //     Err(VenumError::Conversion(
+            //         ConversionError::NotRepresentableAsDecimal {
+            //             src_type: String::from("i128"),
+            //             src_value: i128::MIN.to_string()
+            //         }
+            //     )),
+            //     Value::decimal_from_i128(i128::MIN)
+            // );
+        }
+
+        #[test]
+        pub fn from_unsigned_ints_max_to_value_decimal() {
+            assert_eq!(
+                Value::Decimal(Decimal::from(u8::MAX)),
+                Value::decimal_from_u8(u8::MAX)
+            );
+            assert_eq!(
+                Value::Decimal(Decimal::from(u16::MAX)),
+                Value::decimal_from_u16(u16::MAX)
+            );
+            assert_eq!(
+                Value::Decimal(Decimal::from(u32::MAX)),
+                Value::decimal_from_u32(u32::MAX)
+            );
+            assert_eq!(
+                Value::Decimal(Decimal::from(u64::MAX)),
+                Value::decimal_from_u64(u64::MAX)
+            );
+            assert_eq!(
+                Value::Decimal(Decimal::from(128_u128)),
+                Value::decimal_from_u128(128_u128).unwrap()
+            );
+            assert_eq!(
+                Err(VenumError::Conversion(
+                    ConversionError::NotRepresentableAsDecimal {
+                        src_type: String::from("u128"),
+                        src_value: u128::MAX.to_string()
+                    }
+                )),
+                Value::decimal_from_u128(u128::MAX)
+            );
+        }
+
+        #[test]
+        pub fn from_unsigned_ints_min_to_value_decimal() {
+            assert_eq!(
+                Value::Decimal(Decimal::from(u8::MIN)),
+                Value::decimal_from_u8(u8::MIN)
+            );
+            assert_eq!(
+                Value::Decimal(Decimal::from(u16::MIN)),
+                Value::decimal_from_u16(u16::MIN)
+            );
+            assert_eq!(
+                Value::Decimal(Decimal::from(u32::MIN)),
+                Value::decimal_from_u32(u32::MIN)
+            );
+            assert_eq!(
+                Value::Decimal(Decimal::from(u64::MIN)),
+                Value::decimal_from_u64(u64::MIN)
+            );
+            assert_eq!(
+                Value::Decimal(Decimal::from(u128::MIN)),
+                Value::decimal_from_u128(u128::MIN).unwrap()
+            );
+        }
+
+        #[test]
+        pub fn from_usize_isize_min_max() {
+            assert_eq!(
+                Value::Decimal(Decimal::from(usize::MIN)),
+                Value::decimal_from_usize(usize::MIN)
+            );
+            assert_eq!(
+                Value::Decimal(Decimal::from(usize::MAX)),
+                Value::decimal_from_usize(usize::MAX)
+            );
+            assert_eq!(
+                Value::Decimal(Decimal::from(isize::MIN)),
+                Value::decimal_from_isize(isize::MIN)
+            );
+            assert_eq!(
+                Value::Decimal(Decimal::from(isize::MAX)),
+                Value::decimal_from_isize(isize::MAX)
+            );
         }
     }
 
@@ -1183,7 +1391,7 @@ mod tests {
         use crate::venum::{Value, ValueType};
 
         #[test]
-        pub fn test_impl_from_type_for_value() {
+        pub fn impl_from_type_for_value() {
             assert_eq!(
                 Value::String(String::from("foobar")),
                 Value::from(String::from("foobar"))
@@ -1229,7 +1437,7 @@ mod tests {
         }
 
         #[test]
-        pub fn test_impl_try_from_value_for_type() {
+        pub fn impl_try_from_value_for_type() {
             assert_eq!(
                 String::from("foobar"),
                 String::try_from(Value::String(String::from("foobar"))).unwrap()
@@ -1278,7 +1486,7 @@ mod tests {
         }
 
         #[test]
-        pub fn test_impl_try_from_value_ref_for_copy_type() {
+        pub fn impl_try_from_value_ref_for_copy_type() {
             assert_eq!('a', char::try_from(&Value::Char('a')).unwrap());
 
             assert_eq!(0i8, i8::try_from(&Value::Int8(0i8)).unwrap());
@@ -1300,7 +1508,7 @@ mod tests {
         }
 
         #[test]
-        pub fn test_impl_try_from_value_ref_for_clone_type() {
+        pub fn impl_try_from_value_ref_for_clone_type() {
             assert_eq!(
                 String::from("foobar"),
                 String::try_from(&Value::String(String::from("foobar"))).unwrap()
