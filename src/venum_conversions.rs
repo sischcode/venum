@@ -348,7 +348,7 @@ impl Value {
                     }
 
                     let mut chars = val.chars();
-                    let mut val_as_char: char = chars.next().unwrap(); // we checked the length above, there must be something here!
+                    let val_as_char: char = chars.next().unwrap(); // we checked the length above, there must be something here!
                     if chars.next().is_some() {
                         return Err(VenumError::Conversion(
                             ConversionError::NotRepresentableAs {
