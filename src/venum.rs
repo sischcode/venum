@@ -75,6 +75,48 @@ impl ValueType {
     }
 }
 
+impl TryFrom<&Value> for ValueType {
+    type Error = VenumError;
+
+    fn try_from(value: &Value) -> Result<Self> {
+        match value {
+            Value::None => Err(VenumError::Generic {
+                msg: format!(
+                    "Cannot convert {} as it has no correspondence in target",
+                    value
+                ),
+            }),
+            Value::Char(_) => Ok(ValueType::Char),
+            Value::String(_) => Ok(ValueType::String),
+            Value::Int8(_) => Ok(ValueType::Int8),
+            Value::Int16(_) => Ok(ValueType::Int16),
+            Value::Int32(_) => Ok(ValueType::Int32),
+            Value::Int64(_) => Ok(ValueType::Int64),
+            Value::Int128(_) => Ok(ValueType::Int128),
+            Value::UInt8(_) => Ok(ValueType::UInt8),
+            Value::UInt16(_) => Ok(ValueType::UInt16),
+            Value::UInt32(_) => Ok(ValueType::UInt32),
+            Value::UInt64(_) => Ok(ValueType::UInt64),
+            Value::UInt128(_) => Ok(ValueType::UInt128),
+            Value::Float32(_) => Ok(ValueType::Float32),
+            Value::Float64(_) => Ok(ValueType::Float64),
+            Value::Bool(_) => Ok(ValueType::Bool),
+            Value::Decimal(_) => Ok(ValueType::Decimal),
+            Value::NaiveDate(_) => Ok(ValueType::NaiveDate),
+            Value::NaiveDateTime(_) => Ok(ValueType::NaiveDateTime),
+            Value::DateTime(_) => Ok(ValueType::DateTime),
+        }
+    }
+}
+
+impl TryFrom<Value> for ValueType {
+    type Error = VenumError;
+
+    fn try_from(value: Value) -> Result<Self> {
+        ValueType::try_from(&value)
+    }
+}
+
 #[derive(Display, Debug, Clone, PartialEq, PartialOrd)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Value {
@@ -265,8 +307,8 @@ macro_rules! is_type {
     };
 }
 
-impl From<ValueType> for Value {
-    fn from(vvvn: ValueType) -> Self {
+impl From<&ValueType> for Value {
+    fn from(vvvn: &ValueType) -> Self {
         match vvvn {
             ValueType::Char => Value::char_default(),
             ValueType::String => Value::string_default(),
@@ -291,29 +333,9 @@ impl From<ValueType> for Value {
     }
 }
 
-impl From<&ValueType> for Value {
-    fn from(vvvn: &ValueType) -> Self {
-        match vvvn {
-            ValueType::Char => Value::char_default(),
-            ValueType::String => Value::string_default(),
-            ValueType::Int8 => Value::int8_default(),
-            ValueType::Int16 => Value::int16_default(),
-            ValueType::Int32 => Value::int32_default(),
-            ValueType::Int64 => Value::int64_default(),
-            ValueType::Int128 => Value::int128_default(),
-            ValueType::UInt8 => Value::uint8_default(),
-            ValueType::UInt16 => Value::uint16_default(),
-            ValueType::UInt32 => Value::uint32_default(),
-            ValueType::UInt64 => Value::uint64_default(),
-            ValueType::UInt128 => Value::uint128_default(),
-            ValueType::Float32 => Value::float32_default(),
-            ValueType::Float64 => Value::float64_default(),
-            ValueType::Bool => Value::bool_default(),
-            ValueType::Decimal => Value::decimal_default(),
-            ValueType::NaiveDate => Value::naive_date_default(),
-            ValueType::NaiveDateTime => Value::naive_date_time_default(),
-            ValueType::DateTime => Value::date_time_default(),
-        }
+impl From<ValueType> for Value {
+    fn from(vvvn: ValueType) -> Self {
+        Value::from(&vvvn)
     }
 }
 
@@ -737,8 +759,6 @@ impl Value {
     pub fn is_some_float_type(&self) -> bool {
         self.is_float32() || self.is_float64()
     }
-
-    // TODO: convertion fns between the different variants
 }
 
 impl Default for Value {
