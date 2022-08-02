@@ -1,7 +1,7 @@
 use strum_macros::Display;
 use thiserror::Error;
 
-use crate::venum::{Value, ValueType};
+use crate::{value::Value, value_type::ValueType};
 
 #[derive(Debug, PartialEq, Clone, Display)]
 pub enum VenumError {
