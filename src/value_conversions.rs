@@ -25,12 +25,7 @@ fn mk_not_rep_err(s: &Value, tt: ValueType) -> VenumError {
 
 impl Value {
     // TODO: docu
-
     // TODO: correct impls for from_char...
-    // TODO: correct impls for from:f64
-
-    // a f32 fits into a u128
-
     pub fn try_convert_to(&self, target_type: ValueType) -> Result<Value> {
         let from_type = ValueType::try_from(self)?; // TODO: wrap error
         match target_type {
