@@ -1,3 +1,11 @@
+// #![warn(
+//     clippy::cast_possible_truncation,
+//     clippy::cast_lossless,
+//     clippy::cast_possible_wrap,
+//     clippy::cast_precision_loss,
+//     clippy::cast_sign_loss
+// )]
+
 use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime};
 use rust_decimal::prelude::{FromPrimitive, ToPrimitive};
 use rust_decimal::Decimal;
@@ -19,6 +27,9 @@ impl Value {
     // TODO: docu
 
     // TODO: correct impls for from_char...
+    // TODO: correct impls for from:f64
+
+    // a f32 fits into a u128
 
     pub fn try_convert_to(&self, target_type: ValueType) -> Result<Value> {
         let from_type = ValueType::try_from(self)?; // TODO: wrap error
@@ -37,7 +48,7 @@ impl Value {
                         Some(_) => Err(VenumError::Conversion(
                             ConversionError::NotRepresentableAs {
                                 src: self.clone(),
-                                target_type: target_type.clone(),
+                                target_type,
                             },
                         )),
                         None => Ok(Value::Char(self_val_char)),
@@ -316,8 +327,8 @@ impl Value {
                 ValueType::Float32 => {
                     let self_val_primitive: f32 = self.try_into()?;
                     if self_val_primitive.fract() == 0.0
-                        && self_val_primitive as i64 <= i8::MAX.into()
-                        && self_val_primitive as i64 >= i8::MIN.into()
+                        && self_val_primitive <= i8::MAX.into()
+                        && self_val_primitive >= i8::MIN.into()
                     {
                         Ok(Value::Int8(self_val_primitive as i8))
                     } else {
@@ -327,8 +338,8 @@ impl Value {
                 ValueType::Float64 => {
                     let self_val_primitive: f64 = self.try_into()?;
                     if self_val_primitive.fract() == 0.0
-                        && self_val_primitive as i128 <= i8::MAX.into()
-                        && self_val_primitive as i128 >= i8::MIN.into()
+                        && self_val_primitive <= i8::MAX.into()
+                        && self_val_primitive >= i8::MIN.into()
                     {
                         Ok(Value::Int8(self_val_primitive as i8))
                     } else {
@@ -446,8 +457,8 @@ impl Value {
                 ValueType::Float32 => {
                     let self_val_primitive: f32 = self.try_into()?;
                     if self_val_primitive.fract() == 0.0
-                        && self_val_primitive as i64 <= i16::MAX.into()
-                        && self_val_primitive as i64 >= i16::MIN.into()
+                        && self_val_primitive <= i16::MAX.into()
+                        && self_val_primitive >= i16::MIN.into()
                     {
                         Ok(Value::Int16(self_val_primitive as i16))
                     } else {
@@ -457,8 +468,8 @@ impl Value {
                 ValueType::Float64 => {
                     let self_val_primitive: f64 = self.try_into()?;
                     if self_val_primitive.fract() == 0.0
-                        && self_val_primitive as i128 <= i16::MAX.into()
-                        && self_val_primitive as i128 >= i16::MIN.into()
+                        && self_val_primitive <= i16::MAX.into()
+                        && self_val_primitive >= i16::MIN.into()
                     {
                         Ok(Value::Int16(self_val_primitive as i16))
                     } else {
@@ -572,8 +583,8 @@ impl Value {
                 ValueType::Float32 => {
                     let self_val_primitive: f32 = self.try_into()?;
                     if self_val_primitive.fract() == 0.0
-                        && self_val_primitive as i64 <= i32::MAX.into()
-                        && self_val_primitive as i64 >= i32::MIN.into()
+                        && self_val_primitive <= i32::MAX as f32
+                        && self_val_primitive >= i32::MIN as f32
                     {
                         Ok(Value::Int32(self_val_primitive as i32))
                     } else {
@@ -583,8 +594,8 @@ impl Value {
                 ValueType::Float64 => {
                     let self_val_primitive: f64 = self.try_into()?;
                     if self_val_primitive.fract() == 0.0
-                        && self_val_primitive as i128 <= i32::MAX.into()
-                        && self_val_primitive as i128 >= i32::MIN.into()
+                        && self_val_primitive <= f64::from(i32::MAX)
+                        && self_val_primitive >= f64::from(i32::MIN)
                     {
                         Ok(Value::Int32(self_val_primitive as i32))
                     } else {
@@ -693,9 +704,11 @@ impl Value {
                 }
                 ValueType::Float32 => {
                     let self_val_primitive: f32 = self.try_into()?;
+                    // We get the biggest/smallest i64 representable by a f32, then we compare against that.
+                    // If our f32 value is bigger/smaller than these limits, we cannot represent it as a i64
                     if self_val_primitive.fract() == 0.0
-                        && self_val_primitive as i64 <= i64::MAX.into()
-                        && self_val_primitive as i64 >= i64::MIN.into()
+                        && self_val_primitive <= i64::MAX as f32
+                        && self_val_primitive >= i64::MIN as f32
                     {
                         Ok(Value::Int64(self_val_primitive as i64))
                     } else {
@@ -704,9 +717,11 @@ impl Value {
                 }
                 ValueType::Float64 => {
                     let self_val_primitive: f64 = self.try_into()?;
+                    // We get the biggest/smallest i64 representable by a f64, then we compare against that.
+                    // If our f64 value is bigger/smaller than these limits, we cannot represent it as a i64
                     if self_val_primitive.fract() == 0.0
-                        && self_val_primitive as i128 <= i64::MAX.into()
-                        && self_val_primitive as i128 >= i64::MIN.into()
+                        && self_val_primitive <= i64::MAX as f64
+                        && self_val_primitive >= i64::MIN as f64
                     {
                         Ok(Value::Int64(self_val_primitive as i64))
                     } else {
@@ -811,7 +826,12 @@ impl Value {
                 }
                 ValueType::Float32 => {
                     let self_val_primitive: f32 = self.try_into()?;
-                    if self_val_primitive.fract() == 0.0 {
+                    // We get the biggest/smallest i128 representable by a f32, then we compare against that.
+                    // If our f32 value is bigger/smaller than these limits, we cannot represent it as a i128
+                    if self_val_primitive.fract() == 0.0
+                        && self_val_primitive <= i128::MAX as f32
+                        && self_val_primitive >= i128::MIN as f32
+                    {
                         Ok(Value::Int128(self_val_primitive as i128))
                     } else {
                         Err(mk_not_rep_err(self, target_type))
@@ -819,7 +839,12 @@ impl Value {
                 }
                 ValueType::Float64 => {
                     let self_val_primitive: f64 = self.try_into()?;
-                    if self_val_primitive.fract() == 0.0 {
+                    // We get the biggest/smallest i128 representable by a f64, then we compare against that.
+                    // If our f64 value is bigger/smaller than these limits, we cannot represent it as a i128
+                    if self_val_primitive.fract() == 0.0
+                        && self_val_primitive <= i128::MAX as f64
+                        && self_val_primitive >= i128::MIN as f64
+                    {
                         Ok(Value::Int128(self_val_primitive as i128))
                     } else {
                         Err(mk_not_rep_err(self, target_type))
@@ -945,7 +970,7 @@ impl Value {
                     let self_val_primitive: f32 = self.try_into()?;
                     if self_val_primitive.fract() == 0.0
                         && self_val_primitive >= 0.0
-                        && self_val_primitive as u64 <= u8::MAX.into()
+                        && self_val_primitive <= u8::MAX.into()
                     {
                         Ok(Value::UInt8(self_val_primitive as u8))
                     } else {
@@ -956,7 +981,7 @@ impl Value {
                     let self_val_primitive: f64 = self.try_into()?;
                     if self_val_primitive.fract() == 0.0
                         && self_val_primitive >= 0.0
-                        && self_val_primitive as u128 <= u8::MAX.into()
+                        && self_val_primitive <= u8::MAX.into()
                     {
                         Ok(Value::UInt8(self_val_primitive as u8))
                     } else {
@@ -1081,7 +1106,7 @@ impl Value {
                     let self_val_primitive: f32 = self.try_into()?;
                     if self_val_primitive.fract() == 0.0
                         && self_val_primitive >= 0.0
-                        && self_val_primitive as u64 <= u16::MAX.into()
+                        && self_val_primitive <= u16::MAX.into()
                     {
                         Ok(Value::UInt16(self_val_primitive as u16))
                     } else {
@@ -1092,7 +1117,7 @@ impl Value {
                     let self_val_primitive: f64 = self.try_into()?;
                     if self_val_primitive.fract() == 0.0
                         && self_val_primitive >= 0.0
-                        && self_val_primitive as u128 <= u16::MAX.into()
+                        && self_val_primitive <= u16::MAX.into()
                     {
                         Ok(Value::UInt16(self_val_primitive as u16))
                     } else {
@@ -1127,12 +1152,7 @@ impl Value {
                 ValueType::Char => {
                     let self_val: char = self.try_into()?;
                     match self_val.to_digit(DEFAULT_RADIX_10) {
-                        Some(self_val_as_digit_u32) => match self_val_as_digit_u32.try_into() {
-                            Ok(self_val_as_target_primitive) => {
-                                Ok(Value::UInt32(self_val_as_target_primitive)) // success!
-                            }
-                            Err(_) => Err(mk_not_rep_err(self, target_type)),
-                        },
+                        Some(self_val_as_digit_u32) => Ok(Value::UInt32(self_val_as_digit_u32)), // success!
                         None => Err(mk_not_rep_err(self, target_type)),
                     }
                 }
@@ -1213,9 +1233,11 @@ impl Value {
                 }
                 ValueType::Float32 => {
                     let self_val_primitive: f32 = self.try_into()?;
+                    // We get the biggest u32 representable by a f32, then we compare against that.
+                    // If our f32 value is bigger than the limit, we cannot represent it as a u32
                     if self_val_primitive.fract() == 0.0
                         && self_val_primitive >= 0.0
-                        && self_val_primitive as u64 <= u32::MAX.into()
+                        && self_val_primitive <= u32::MAX as f32
                     {
                         Ok(Value::UInt32(self_val_primitive as u32))
                     } else {
@@ -1224,9 +1246,11 @@ impl Value {
                 }
                 ValueType::Float64 => {
                     let self_val_primitive: f64 = self.try_into()?;
+                    // We get the biggest u32 representable by a f64, then we compare against that.
+                    // If our f64 value is bigger than the limit, we cannot represent it as a u32
                     if self_val_primitive.fract() == 0.0
                         && self_val_primitive >= 0.0
-                        && self_val_primitive as u128 <= u32::MAX.into()
+                        && self_val_primitive <= f64::from(u32::MAX)
                     {
                         Ok(Value::UInt32(self_val_primitive as u32))
                     } else {
@@ -1326,12 +1350,12 @@ impl Value {
                     Ok(Value::UInt64(self_val_as_target_primitive))
                 }
                 ValueType::UInt16 => {
-                    let self_val_primitive: u64 = self.try_into()?;
+                    let self_val_primitive: u16 = self.try_into()?;
                     let self_val_as_target_primitive: u64 = self_val_primitive.into();
                     Ok(Value::UInt64(self_val_as_target_primitive))
                 }
                 ValueType::UInt32 => {
-                    let self_val_primitive: u64 = self.try_into()?;
+                    let self_val_primitive: u32 = self.try_into()?;
                     let self_val_as_target_primitive: u64 = self_val_primitive.into();
                     Ok(Value::UInt64(self_val_as_target_primitive))
                 }
@@ -1345,15 +1369,25 @@ impl Value {
                 }
                 ValueType::Float32 => {
                     let self_val_primitive: f32 = self.try_into()?;
-                    if self_val_primitive.fract() == 0.0 && self_val_primitive > 0.0 {
+                    // We get the biggest u64 representable by a f32, then we compare against that.
+                    // If our f32 value is bigger than the limit, we cannot represent it as a u64
+                    if self_val_primitive.fract() == 0.0
+                        && self_val_primitive >= 0.0
+                        && self_val_primitive <= u64::MAX as f32
+                    {
                         Ok(Value::UInt64(self_val_primitive as u64))
                     } else {
                         Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Float64 => {
+                    // We get the biggest u64 representable by a f64, then we compare against that.
+                    // If our f64 value is bigger than the limit, we cannot represent it as a u64
                     let self_val_primitive: f64 = self.try_into()?;
-                    if self_val_primitive.fract() == 0.0 && self_val_primitive > 0.0 {
+                    if self_val_primitive.fract() == 0.0
+                        && self_val_primitive >= 0.0
+                        && self_val_primitive <= u64::MAX as f64
+                    {
                         Ok(Value::UInt64(self_val_primitive as u64))
                     } else {
                         Err(mk_not_rep_err(self, target_type))
@@ -1453,17 +1487,17 @@ impl Value {
                     Ok(Value::UInt128(self_val_as_target_primitive))
                 }
                 ValueType::UInt16 => {
-                    let self_val_primitive: u128 = self.try_into()?;
+                    let self_val_primitive: u16 = self.try_into()?;
                     let self_val_as_target_primitive: u128 = self_val_primitive.into();
                     Ok(Value::UInt128(self_val_as_target_primitive))
                 }
                 ValueType::UInt32 => {
-                    let self_val_primitive: u128 = self.try_into()?;
+                    let self_val_primitive: u32 = self.try_into()?;
                     let self_val_as_target_primitive: u128 = self_val_primitive.into();
                     Ok(Value::UInt128(self_val_as_target_primitive))
                 }
                 ValueType::UInt64 => {
-                    let self_val_primitive: u128 = self.try_into()?;
+                    let self_val_primitive: u64 = self.try_into()?;
                     let self_val_as_target_primitive: u128 = self_val_primitive.into();
                     Ok(Value::UInt128(self_val_as_target_primitive))
                 }
@@ -1478,7 +1512,12 @@ impl Value {
                 }
                 ValueType::Float64 => {
                     let self_val_primitive: f64 = self.try_into()?;
-                    if self_val_primitive.fract() == 0.0 && self_val_primitive > 0.0 {
+                    // We get the biggest u128 representable by a f64, then we compare against that.
+                    // If our f64 value is bigger than the limit, we cannot represent it as a u128
+                    if self_val_primitive.fract() == 0.0
+                        && self_val_primitive >= 0.0
+                        && self_val_primitive <= u128::MAX as f64
+                    {
                         Ok(Value::UInt128(self_val_primitive as u128))
                     } else {
                         Err(mk_not_rep_err(self, target_type))
@@ -1544,10 +1583,11 @@ impl Value {
                     }
                 }
                 ValueType::Int64 => {
-                    let self_val_primitive: i64 = self.try_into()?;
-                    let self_val_as_target_primitive: f32 = self_val_primitive as f32;
-                    let self_val_as_src_type_check: i64 = self_val_as_target_primitive as i64;
-                    if self_val_primitive == self_val_as_src_type_check {
+                    let self_val_primitive: i64 = self.try_into()?; // what we have
+                    let self_val_as_target_primitive: f32 = self_val_primitive as f32; // what we want, if possible
+
+                    // check that the conversion was losless by casting it back to the source type and checking for equality
+                    if self_val_primitive == self_val_as_target_primitive as i64 {
                         Ok(Value::Float32(self_val_as_target_primitive))
                     } else {
                         Err(mk_not_rep_err(self, target_type))
@@ -1556,8 +1596,8 @@ impl Value {
                 ValueType::Int128 => {
                     let self_val_primitive: i128 = self.try_into()?;
                     let self_val_as_target_primitive: f32 = self_val_primitive as f32;
-                    let self_val_as_src_type_check: i128 = self_val_as_target_primitive as i128;
-                    if self_val_primitive == self_val_as_src_type_check {
+
+                    if self_val_primitive == self_val_as_target_primitive as i128 {
                         Ok(Value::Float32(self_val_as_target_primitive))
                     } else {
                         Err(mk_not_rep_err(self, target_type))
@@ -1576,8 +1616,8 @@ impl Value {
                 ValueType::UInt32 => {
                     let self_val_primitive: u32 = self.try_into()?;
                     let self_val_as_target_primitive: f32 = self_val_primitive as f32;
-                    let self_val_as_src_type_check: u32 = self_val_as_target_primitive as u32;
-                    if self_val_primitive == self_val_as_src_type_check {
+
+                    if self_val_primitive == self_val_as_target_primitive as u32 {
                         Ok(Value::Float32(self_val_as_target_primitive))
                     } else {
                         Err(mk_not_rep_err(self, target_type))
@@ -1586,8 +1626,8 @@ impl Value {
                 ValueType::UInt64 => {
                     let self_val_primitive: u64 = self.try_into()?;
                     let self_val_as_target_primitive: f32 = self_val_primitive as f32;
-                    let self_val_as_src_type_check: u64 = self_val_as_target_primitive as u64;
-                    if self_val_primitive == self_val_as_src_type_check {
+
+                    if self_val_primitive == self_val_as_target_primitive as u64 {
                         Ok(Value::Float32(self_val_as_target_primitive))
                     } else {
                         Err(mk_not_rep_err(self, target_type))
@@ -1596,8 +1636,8 @@ impl Value {
                 ValueType::UInt128 => {
                     let self_val_primitive: u128 = self.try_into()?;
                     let self_val_as_target_primitive: f32 = self_val_primitive as f32;
-                    let self_val_as_src_type_check: u128 = self_val_as_target_primitive as u128;
-                    if self_val_primitive == self_val_as_src_type_check {
+
+                    if self_val_primitive == self_val_as_target_primitive as u128 {
                         Ok(Value::Float32(self_val_as_target_primitive))
                     } else {
                         Err(mk_not_rep_err(self, target_type))
@@ -1662,8 +1702,8 @@ impl Value {
                 ValueType::Int64 => {
                     let self_val_primitive: i64 = self.try_into()?;
                     let self_val_as_target_primitive: f64 = self_val_primitive as f64;
-                    let self_val_as_src_type_check: i64 = self_val_as_target_primitive as i64;
-                    if self_val_primitive == self_val_as_src_type_check {
+
+                    if self_val_primitive == self_val_as_target_primitive as i64 {
                         Ok(Value::Float64(self_val_as_target_primitive))
                     } else {
                         Err(mk_not_rep_err(self, target_type))
@@ -1672,8 +1712,8 @@ impl Value {
                 ValueType::Int128 => {
                     let self_val_primitive: i128 = self.try_into()?;
                     let self_val_as_target_primitive: f64 = self_val_primitive as f64;
-                    let self_val_as_src_type_check: i128 = self_val_as_target_primitive as i128;
-                    if self_val_primitive == self_val_as_src_type_check {
+
+                    if self_val_primitive == self_val_as_target_primitive as i128 {
                         Ok(Value::Float64(self_val_as_target_primitive))
                     } else {
                         Err(mk_not_rep_err(self, target_type))
@@ -1697,8 +1737,8 @@ impl Value {
                 ValueType::UInt64 => {
                     let self_val_primitive: u64 = self.try_into()?;
                     let self_val_as_target_primitive: f64 = self_val_primitive as f64;
-                    let self_val_as_src_type_check: u64 = self_val_as_target_primitive as u64;
-                    if self_val_primitive == self_val_as_src_type_check {
+
+                    if self_val_primitive == self_val_as_target_primitive as u64 {
                         Ok(Value::Float64(self_val_as_target_primitive))
                     } else {
                         Err(mk_not_rep_err(self, target_type))
@@ -1707,8 +1747,8 @@ impl Value {
                 ValueType::UInt128 => {
                     let self_val_primitive: u128 = self.try_into()?;
                     let self_val_as_target_primitive: f64 = self_val_primitive as f64;
-                    let self_val_as_src_type_check: u128 = self_val_as_target_primitive as u128;
-                    if self_val_primitive == self_val_as_src_type_check {
+
+                    if self_val_primitive == self_val_as_target_primitive as u128 {
                         Ok(Value::Float64(self_val_as_target_primitive))
                     } else {
                         Err(mk_not_rep_err(self, target_type))
@@ -2512,7 +2552,7 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_float64_err_val_too_big() {
-            Value::Float64(12345678.0)
+            Value::Float64(f64::MAX as u128 as f64)
                 .try_convert_to(ValueType::UInt8)
                 .unwrap();
         }
@@ -3276,6 +3316,598 @@ mod tests {
                     .and_hms_milli(10, 0, 0, 100),
             )
             .try_convert_to(ValueType::UInt32)
+            .unwrap();
+        }
+    }
+
+    mod uint64_as_target {
+        use chrono::TimeZone;
+
+        use super::*;
+
+        #[test]
+        fn from_char() {
+            assert_eq!(
+                Value::UInt64(1),
+                Value::Char('1').try_convert_to(ValueType::UInt64).unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_char_err() {
+            Value::Char('a').try_convert_to(ValueType::UInt64).unwrap();
+        }
+
+        #[test]
+        fn from_string() {
+            assert_eq!(
+                Value::UInt64(64),
+                Value::String(String::from("64"))
+                    .try_convert_to(ValueType::UInt64)
+                    .unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_string_err() {
+            Value::String(String::from("abc"))
+                .try_convert_to(ValueType::UInt64)
+                .unwrap();
+        }
+
+        #[test]
+        fn from_uint8() {
+            assert_eq!(
+                Value::UInt64(64),
+                Value::UInt8(64).try_convert_to(ValueType::UInt64).unwrap()
+            );
+        }
+
+        #[test]
+        fn from_uint16() {
+            assert_eq!(
+                Value::UInt64(64),
+                Value::UInt16(64).try_convert_to(ValueType::UInt64).unwrap()
+            );
+        }
+
+        #[test]
+        fn from_uint32() {
+            assert_eq!(
+                Value::UInt64(64),
+                Value::UInt32(64).try_convert_to(ValueType::UInt64).unwrap()
+            );
+        }
+
+        #[test]
+        fn from_uint64() {
+            assert_eq!(
+                Value::UInt64(64),
+                Value::UInt64(64).try_convert_to(ValueType::UInt64).unwrap()
+            );
+        }
+
+        #[test]
+        fn from_uint128() {
+            assert_eq!(
+                Value::UInt64(64),
+                Value::UInt128(64)
+                    .try_convert_to(ValueType::UInt64)
+                    .unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_uint128_err_val_too_big() {
+            Value::UInt128(u128::MAX)
+                .try_convert_to(ValueType::UInt64)
+                .unwrap();
+        }
+
+        #[test]
+        fn from_int8() {
+            assert_eq!(
+                Value::UInt64(64),
+                Value::Int8(64).try_convert_to(ValueType::UInt64).unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_int8_err_val_too_small() {
+            Value::Int8(-1).try_convert_to(ValueType::UInt64).unwrap();
+        }
+
+        #[test]
+        fn from_int16() {
+            assert_eq!(
+                Value::UInt64(64),
+                Value::Int16(64).try_convert_to(ValueType::UInt64).unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_int16_err_val_too_small() {
+            Value::Int16(-1).try_convert_to(ValueType::UInt64).unwrap();
+        }
+
+        #[test]
+        fn from_int32() {
+            assert_eq!(
+                Value::UInt64(64),
+                Value::Int32(64).try_convert_to(ValueType::UInt64).unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_int32_err_val_too_small() {
+            Value::Int32(-1).try_convert_to(ValueType::UInt64).unwrap();
+        }
+
+        #[test]
+        fn from_int64() {
+            assert_eq!(
+                Value::UInt64(64),
+                Value::Int64(64).try_convert_to(ValueType::UInt64).unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_int64_err_val_too_small() {
+            Value::Int64(-1).try_convert_to(ValueType::UInt64).unwrap();
+        }
+
+        #[test]
+        fn from_int128() {
+            assert_eq!(
+                Value::UInt64(64),
+                Value::Int128(64).try_convert_to(ValueType::UInt64).unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_int128_err_val_too_big() {
+            Value::Int128(i128::MAX)
+                .try_convert_to(ValueType::UInt64)
+                .unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_int128_err_val_too_small() {
+            Value::Int128(-1).try_convert_to(ValueType::UInt64).unwrap();
+        }
+
+        #[test]
+        fn from_float32() {
+            assert_eq!(
+                Value::UInt64(64),
+                Value::Float32(64.0)
+                    .try_convert_to(ValueType::UInt64)
+                    .unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_float32_err_val_too_small() {
+            Value::Float32(-1.0)
+                .try_convert_to(ValueType::UInt64)
+                .unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_float32_err_val_uneven() {
+            Value::Float32(1.5)
+                .try_convert_to(ValueType::UInt64)
+                .unwrap();
+        }
+
+        #[test]
+        fn from_float64() {
+            assert_eq!(
+                Value::UInt64(64),
+                Value::Float64(64.0)
+                    .try_convert_to(ValueType::UInt64)
+                    .unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_float64_err_val_too_big() {
+            Value::Float64((f64::MAX as u128) as f64)
+                .try_convert_to(ValueType::UInt64)
+                .unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_float64_err_val_too_small() {
+            Value::Float64(-1.0)
+                .try_convert_to(ValueType::UInt64)
+                .unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_float64_err_val_uneven() {
+            Value::Float64(1.5)
+                .try_convert_to(ValueType::UInt64)
+                .unwrap();
+        }
+
+        #[test]
+        fn from_bool() {
+            assert_eq!(
+                Value::UInt64(1),
+                Value::Bool(true).try_convert_to(ValueType::UInt64).unwrap()
+            );
+            assert_eq!(
+                Value::UInt64(0),
+                Value::Bool(false)
+                    .try_convert_to(ValueType::UInt64)
+                    .unwrap()
+            );
+        }
+
+        #[test]
+        fn from_decimal() {
+            assert_eq!(
+                Value::UInt64(123),
+                Value::Decimal(Decimal::new(123, 0))
+                    .try_convert_to(ValueType::UInt64)
+                    .unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_decimal_err_val_too_small() {
+            Value::Decimal(Decimal::new(-1, 0))
+                .try_convert_to(ValueType::UInt64)
+                .unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_decimal_err_val_uneven() {
+            Value::Decimal(Decimal::new(15, 1))
+                .try_convert_to(ValueType::UInt64)
+                .unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_naive_date() {
+            Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31))
+                .try_convert_to(ValueType::UInt64)
+                .unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_naive_date_time() {
+            Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0))
+                .try_convert_to(ValueType::UInt64)
+                .unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_date_time() {
+            Value::DateTime(
+                FixedOffset::east(2 * 3600)
+                    .ymd(2022, 12, 31)
+                    .and_hms_milli(10, 0, 0, 100),
+            )
+            .try_convert_to(ValueType::UInt64)
+            .unwrap();
+        }
+    }
+
+    mod uint128_as_target {
+        use chrono::TimeZone;
+
+        use super::*;
+
+        #[test]
+        fn from_char() {
+            assert_eq!(
+                Value::UInt128(1),
+                Value::Char('1').try_convert_to(ValueType::UInt128).unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_char_err() {
+            Value::Char('a').try_convert_to(ValueType::UInt128).unwrap();
+        }
+
+        #[test]
+        fn from_string() {
+            assert_eq!(
+                Value::UInt128(128),
+                Value::String(String::from("128"))
+                    .try_convert_to(ValueType::UInt128)
+                    .unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_string_err() {
+            Value::String(String::from("abc"))
+                .try_convert_to(ValueType::UInt128)
+                .unwrap();
+        }
+
+        #[test]
+        fn from_uint8() {
+            assert_eq!(
+                Value::UInt128(128),
+                Value::UInt8(128)
+                    .try_convert_to(ValueType::UInt128)
+                    .unwrap()
+            );
+        }
+
+        #[test]
+        fn from_uint16() {
+            assert_eq!(
+                Value::UInt128(128),
+                Value::UInt16(128)
+                    .try_convert_to(ValueType::UInt128)
+                    .unwrap()
+            );
+        }
+
+        #[test]
+        fn from_uint32() {
+            assert_eq!(
+                Value::UInt128(128),
+                Value::UInt32(128)
+                    .try_convert_to(ValueType::UInt128)
+                    .unwrap()
+            );
+        }
+
+        #[test]
+        fn from_uint64() {
+            assert_eq!(
+                Value::UInt128(128),
+                Value::UInt64(128)
+                    .try_convert_to(ValueType::UInt128)
+                    .unwrap()
+            );
+        }
+
+        #[test]
+        fn from_uint128() {
+            assert_eq!(
+                Value::UInt128(128),
+                Value::UInt128(128)
+                    .try_convert_to(ValueType::UInt128)
+                    .unwrap()
+            );
+        }
+
+        #[test]
+        fn from_int8() {
+            assert_eq!(
+                Value::UInt128(127),
+                Value::Int8(127).try_convert_to(ValueType::UInt128).unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_int8_err_val_too_small() {
+            Value::Int8(-1).try_convert_to(ValueType::UInt128).unwrap();
+        }
+
+        #[test]
+        fn from_int16() {
+            assert_eq!(
+                Value::UInt128(128),
+                Value::Int16(128)
+                    .try_convert_to(ValueType::UInt128)
+                    .unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_int16_err_val_too_small() {
+            Value::Int16(-1).try_convert_to(ValueType::UInt128).unwrap();
+        }
+
+        #[test]
+        fn from_int32() {
+            assert_eq!(
+                Value::UInt128(128),
+                Value::Int32(128)
+                    .try_convert_to(ValueType::UInt128)
+                    .unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_int32_err_val_too_small() {
+            Value::Int32(-1).try_convert_to(ValueType::UInt128).unwrap();
+        }
+
+        #[test]
+        fn from_int64() {
+            assert_eq!(
+                Value::UInt128(128),
+                Value::Int64(128)
+                    .try_convert_to(ValueType::UInt128)
+                    .unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_int64_err_val_too_small() {
+            Value::Int64(-1).try_convert_to(ValueType::UInt128).unwrap();
+        }
+
+        #[test]
+        fn from_int128() {
+            assert_eq!(
+                Value::UInt128(128),
+                Value::Int128(128)
+                    .try_convert_to(ValueType::UInt128)
+                    .unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_int128_err_val_too_small() {
+            Value::Int128(-1)
+                .try_convert_to(ValueType::UInt128)
+                .unwrap();
+        }
+
+        #[test]
+        fn from_float32() {
+            assert_eq!(
+                Value::UInt128(128),
+                Value::Float32(128.0)
+                    .try_convert_to(ValueType::UInt128)
+                    .unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_float32_err_val_too_small() {
+            Value::Float32(-1.0)
+                .try_convert_to(ValueType::UInt128)
+                .unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_float32_err_val_uneven() {
+            Value::Float32(1.5)
+                .try_convert_to(ValueType::UInt128)
+                .unwrap();
+        }
+
+        #[test]
+        fn from_float64() {
+            assert_eq!(
+                Value::UInt128(128),
+                Value::Float64(128.0)
+                    .try_convert_to(ValueType::UInt128)
+                    .unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_float64_err_val_too_big() {
+            Value::Float64(f64::MAX.round())
+                .try_convert_to(ValueType::UInt128)
+                .unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_float64_err_val_too_small() {
+            Value::Float64(-1.0)
+                .try_convert_to(ValueType::UInt128)
+                .unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_float64_err_val_uneven() {
+            Value::Float64(1.5)
+                .try_convert_to(ValueType::UInt128)
+                .unwrap();
+        }
+
+        #[test]
+        fn from_bool() {
+            assert_eq!(
+                Value::UInt128(1),
+                Value::Bool(true)
+                    .try_convert_to(ValueType::UInt128)
+                    .unwrap()
+            );
+            assert_eq!(
+                Value::UInt128(0),
+                Value::Bool(false)
+                    .try_convert_to(ValueType::UInt128)
+                    .unwrap()
+            );
+        }
+
+        #[test]
+        fn from_decimal() {
+            assert_eq!(
+                Value::UInt128(128),
+                Value::Decimal(Decimal::new(128, 0))
+                    .try_convert_to(ValueType::UInt128)
+                    .unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_decimal_err_val_too_small() {
+            Value::Decimal(Decimal::new(-1, 0))
+                .try_convert_to(ValueType::UInt128)
+                .unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_decimal_err_val_uneven() {
+            Value::Decimal(Decimal::new(15, 1))
+                .try_convert_to(ValueType::UInt128)
+                .unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_naive_date() {
+            Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31))
+                .try_convert_to(ValueType::UInt128)
+                .unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_naive_date_time() {
+            Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0))
+                .try_convert_to(ValueType::UInt128)
+                .unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_date_time() {
+            Value::DateTime(
+                FixedOffset::east(2 * 3600)
+                    .ymd(2022, 12, 31)
+                    .and_hms_milli(10, 0, 0, 100),
+            )
+            .try_convert_to(ValueType::UInt128)
             .unwrap();
         }
     }

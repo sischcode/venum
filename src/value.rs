@@ -454,17 +454,15 @@ impl Value {
             return Ok(Value::None); // Caller must remember the desired type!
         }
         if let Some(none_check_vals) = as_none {
-            if !none_check_vals.is_empty() {
-                if none_check_vals.contains(&value) {
-                    return Ok(Value::None); // Caller must remember the desired type!
-                }
+            if !none_check_vals.is_empty() && none_check_vals.contains(&value) {
+                return Ok(Value::None); // Caller must remember the desired type!
             }
         }
         if let Some(chrono_pattern) = chrono_pattern {
             match target_value_type {
                 ValueType::NaiveDate => Value::parse_naive_date_from_str(value, chrono_pattern),
                 ValueType::NaiveDateTime => {
-                    Value::parse_naive_date_time_from_str(value, &chrono_pattern)
+                    Value::parse_naive_date_time_from_str(value, chrono_pattern)
                 }
                 ValueType::DateTime => Value::parse_date_time_from_str(value, chrono_pattern),
                 _ => Err(VenumError::Parsing(ParseError::ValueFromStringFailed {
