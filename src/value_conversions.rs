@@ -513,15 +513,24 @@ impl Value {
                     }
                 }
                 ValueType::Decimal => {
-                    let self_val_primitive: Decimal = self.try_into()?;
-                    let self_val_as_target_primitive: i8 =
-                        self_val_primitive.to_i8().ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
+                    let self_val: Decimal = self.try_into()?;
+                    if self_val.fract().is_zero() {
+                        let self_val_as_target_primitive: i8 =
+                            self_val.to_i8().ok_or_else(|| {
+                                VenumError::Conversion(ConversionError::NotRepresentableAs {
+                                    src: self.clone(),
+                                    target_type,
+                                })
+                            })?;
+                        Ok(Value::Int8(self_val_as_target_primitive))
+                    } else {
+                        Err(VenumError::Conversion(
+                            ConversionError::NotRepresentableAs {
                                 src: self.clone(),
                                 target_type,
-                            })
-                        })?;
-                    Ok(Value::Int8(self_val_as_target_primitive))
+                            },
+                        ))
+                    }
                 }
                 ValueType::NaiveDate => Err(VenumError::Conversion(
                     ConversionError::NotRepresentableAs {
@@ -710,15 +719,24 @@ impl Value {
                     }
                 }
                 ValueType::Decimal => {
-                    let self_val_primitive: Decimal = self.try_into()?;
-                    let self_val_as_target_primitive: i16 =
-                        self_val_primitive.to_i16().ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
+                    let self_val: Decimal = self.try_into()?;
+                    if self_val.fract().is_zero() {
+                        let self_val_as_target_primitive: i16 =
+                            self_val.to_i16().ok_or_else(|| {
+                                VenumError::Conversion(ConversionError::NotRepresentableAs {
+                                    src: self.clone(),
+                                    target_type,
+                                })
+                            })?;
+                        Ok(Value::Int16(self_val_as_target_primitive))
+                    } else {
+                        Err(VenumError::Conversion(
+                            ConversionError::NotRepresentableAs {
                                 src: self.clone(),
                                 target_type,
-                            })
-                        })?;
-                    Ok(Value::Int16(self_val_as_target_primitive))
+                            },
+                        ))
+                    }
                 }
                 ValueType::NaiveDate => Err(VenumError::Conversion(
                     ConversionError::NotRepresentableAs {
@@ -895,15 +913,24 @@ impl Value {
                     }
                 }
                 ValueType::Decimal => {
-                    let self_val_primitive: Decimal = self.try_into()?;
-                    let self_val_as_target_primitive: i32 =
-                        self_val_primitive.to_i32().ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
+                    let self_val: Decimal = self.try_into()?;
+                    if self_val.fract().is_zero() {
+                        let self_val_as_target_primitive: i32 =
+                            self_val.to_i32().ok_or_else(|| {
+                                VenumError::Conversion(ConversionError::NotRepresentableAs {
+                                    src: self.clone(),
+                                    target_type,
+                                })
+                            })?;
+                        Ok(Value::Int32(self_val_as_target_primitive))
+                    } else {
+                        Err(VenumError::Conversion(
+                            ConversionError::NotRepresentableAs {
                                 src: self.clone(),
                                 target_type,
-                            })
-                        })?;
-                    Ok(Value::Int32(self_val_as_target_primitive))
+                            },
+                        ))
+                    }
                 }
                 ValueType::NaiveDate => Err(VenumError::Conversion(
                     ConversionError::NotRepresentableAs {
@@ -1068,15 +1095,24 @@ impl Value {
                     }
                 }
                 ValueType::Decimal => {
-                    let self_val_primitive: Decimal = self.try_into()?;
-                    let self_val_as_target_primitive: i64 =
-                        self_val_primitive.to_i64().ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
+                    let self_val: Decimal = self.try_into()?;
+                    if self_val.fract().is_zero() {
+                        let self_val_as_target_primitive: i64 =
+                            self_val.to_i64().ok_or_else(|| {
+                                VenumError::Conversion(ConversionError::NotRepresentableAs {
+                                    src: self.clone(),
+                                    target_type,
+                                })
+                            })?;
+                        Ok(Value::Int64(self_val_as_target_primitive))
+                    } else {
+                        Err(VenumError::Conversion(
+                            ConversionError::NotRepresentableAs {
                                 src: self.clone(),
                                 target_type,
-                            })
-                        })?;
-                    Ok(Value::Int64(self_val_as_target_primitive))
+                            },
+                        ))
+                    }
                 }
                 ValueType::NaiveDate => Err(VenumError::Conversion(
                     ConversionError::NotRepresentableAs {
@@ -1223,15 +1259,24 @@ impl Value {
                     }
                 }
                 ValueType::Decimal => {
-                    let self_val_primitive: Decimal = self.try_into()?;
-                    let self_val_as_target_primitive: i128 =
-                        self_val_primitive.to_i128().ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
+                    let self_val: Decimal = self.try_into()?;
+                    if self_val.fract().is_zero() {
+                        let self_val_as_target_primitive: i128 =
+                            self_val.to_i128().ok_or_else(|| {
+                                VenumError::Conversion(ConversionError::NotRepresentableAs {
+                                    src: self.clone(),
+                                    target_type,
+                                })
+                            })?;
+                        Ok(Value::Int128(self_val_as_target_primitive))
+                    } else {
+                        Err(VenumError::Conversion(
+                            ConversionError::NotRepresentableAs {
                                 src: self.clone(),
                                 target_type,
-                            })
-                        })?;
-                    Ok(Value::Int128(self_val_as_target_primitive))
+                            },
+                        ))
+                    }
                 }
                 ValueType::NaiveDate => Err(VenumError::Conversion(
                     ConversionError::NotRepresentableAs {
@@ -1432,15 +1477,24 @@ impl Value {
                     }
                 }
                 ValueType::Decimal => {
-                    let self_val_primitive: Decimal = self.try_into()?;
-                    let self_val_as_target_primitive: u8 =
-                        self_val_primitive.to_u8().ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
+                    let self_val: Decimal = self.try_into()?;
+                    if self_val.is_sign_positive() && self_val.fract().is_zero() {
+                        let self_val_as_target_primitive: u8 =
+                            self_val.to_u8().ok_or_else(|| {
+                                VenumError::Conversion(ConversionError::NotRepresentableAs {
+                                    src: self.clone(),
+                                    target_type,
+                                })
+                            })?;
+                        Ok(Value::UInt8(self_val_as_target_primitive))
+                    } else {
+                        Err(VenumError::Conversion(
+                            ConversionError::NotRepresentableAs {
                                 src: self.clone(),
                                 target_type,
-                            })
-                        })?;
-                    Ok(Value::UInt8(self_val_as_target_primitive))
+                            },
+                        ))
+                    }
                 }
                 ValueType::NaiveDate => Err(VenumError::Conversion(
                     ConversionError::NotRepresentableAs {
@@ -1635,15 +1689,24 @@ impl Value {
                     }
                 }
                 ValueType::Decimal => {
-                    let self_val_primitive: Decimal = self.try_into()?;
-                    let self_val_as_target_primitive: u16 =
-                        self_val_primitive.to_u16().ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
+                    let self_val: Decimal = self.try_into()?;
+                    if self_val.is_sign_positive() && self_val.fract().is_zero() {
+                        let self_val_as_target_primitive: u16 =
+                            self_val.to_u16().ok_or_else(|| {
+                                VenumError::Conversion(ConversionError::NotRepresentableAs {
+                                    src: self.clone(),
+                                    target_type,
+                                })
+                            })?;
+                        Ok(Value::UInt16(self_val_as_target_primitive))
+                    } else {
+                        Err(VenumError::Conversion(
+                            ConversionError::NotRepresentableAs {
                                 src: self.clone(),
                                 target_type,
-                            })
-                        })?;
-                    Ok(Value::UInt16(self_val_as_target_primitive))
+                            },
+                        ))
+                    }
                 }
                 ValueType::NaiveDate => Err(VenumError::Conversion(
                     ConversionError::NotRepresentableAs {
@@ -1832,15 +1895,24 @@ impl Value {
                     }
                 }
                 ValueType::Decimal => {
-                    let self_val_primitive: Decimal = self.try_into()?;
-                    let self_val_as_target_primitive: u32 =
-                        self_val_primitive.to_u32().ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
+                    let self_val: Decimal = self.try_into()?;
+                    if self_val.is_sign_positive() && self_val.fract().is_zero() {
+                        let self_val_as_target_primitive: u32 =
+                            self_val.to_u32().ok_or_else(|| {
+                                VenumError::Conversion(ConversionError::NotRepresentableAs {
+                                    src: self.clone(),
+                                    target_type,
+                                })
+                            })?;
+                        Ok(Value::UInt32(self_val_as_target_primitive))
+                    } else {
+                        Err(VenumError::Conversion(
+                            ConversionError::NotRepresentableAs {
                                 src: self.clone(),
                                 target_type,
-                            })
-                        })?;
-                    Ok(Value::UInt32(self_val_as_target_primitive))
+                            },
+                        ))
+                    }
                 }
                 ValueType::NaiveDate => Err(VenumError::Conversion(
                     ConversionError::NotRepresentableAs {
@@ -2017,15 +2089,24 @@ impl Value {
                     }
                 }
                 ValueType::Decimal => {
-                    let self_val_primitive: Decimal = self.try_into()?;
-                    let self_val_as_target_primitive: u64 =
-                        self_val_primitive.to_u64().ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
+                    let self_val: Decimal = self.try_into()?;
+                    if self_val.is_sign_positive() && self_val.fract().is_zero() {
+                        let self_val_as_target_primitive: u64 =
+                            self_val.to_u64().ok_or_else(|| {
+                                VenumError::Conversion(ConversionError::NotRepresentableAs {
+                                    src: self.clone(),
+                                    target_type,
+                                })
+                            })?;
+                        Ok(Value::UInt64(self_val_as_target_primitive))
+                    } else {
+                        Err(VenumError::Conversion(
+                            ConversionError::NotRepresentableAs {
                                 src: self.clone(),
                                 target_type,
-                            })
-                        })?;
-                    Ok(Value::UInt64(self_val_as_target_primitive))
+                            },
+                        ))
+                    }
                 }
                 ValueType::NaiveDate => Err(VenumError::Conversion(
                     ConversionError::NotRepresentableAs {
@@ -2196,15 +2277,24 @@ impl Value {
                     }
                 }
                 ValueType::Decimal => {
-                    let self_val_primitive: Decimal = self.try_into()?;
-                    let self_val_as_target_primitive: u128 =
-                        self_val_primitive.to_u128().ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
+                    let self_val: Decimal = self.try_into()?;
+                    if self_val.is_sign_positive() && self_val.fract().is_zero() {
+                        let self_val_as_target_primitive: u128 =
+                            self_val.to_u128().ok_or_else(|| {
+                                VenumError::Conversion(ConversionError::NotRepresentableAs {
+                                    src: self.clone(),
+                                    target_type,
+                                })
+                            })?;
+                        Ok(Value::UInt128(self_val_as_target_primitive))
+                    } else {
+                        Err(VenumError::Conversion(
+                            ConversionError::NotRepresentableAs {
                                 src: self.clone(),
                                 target_type,
-                            })
-                        })?;
-                    Ok(Value::UInt128(self_val_as_target_primitive))
+                            },
+                        ))
+                    }
                 }
                 ValueType::NaiveDate => Err(VenumError::Conversion(
                     ConversionError::NotRepresentableAs {
