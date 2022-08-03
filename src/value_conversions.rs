@@ -8,6 +8,13 @@ use crate::value_type::ValueType;
 
 const DEFAULT_RADIX_10: u32 = 10;
 
+fn mk_not_rep_err(s: &Value, tt: ValueType) -> VenumError {
+    VenumError::Conversion(ConversionError::NotRepresentableAs {
+        src: s.clone(),
+        target_type: tt,
+    })
+}
+
 impl Value {
     // TODO: docu
 
@@ -21,12 +28,7 @@ impl Value {
                 ValueType::String => {
                     let self_val: String = self.try_into()?;
                     if self_val.is_empty() {
-                        return Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ));
+                        return Err(mk_not_rep_err(self, target_type));
                     }
                     let mut self_val_chars_iter = self_val.chars();
                     let self_val_char = self_val_chars_iter.next().unwrap(); // there must at least be something, initially!
@@ -45,35 +47,20 @@ impl Value {
                     let self_val: u8 = self.try_into()?; // should never fail!
                     let self_val_as_u32: u32 = self_val.into();
                     let self_val_as_char = char::from_digit(self_val_as_u32, DEFAULT_RADIX_10)
-                        .ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                        .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Char(self_val_as_char))
                 }
                 ValueType::UInt16 => {
                     let self_val: u16 = self.try_into()?; // should never fail!
                     let self_val_as_u32: u32 = self_val.into();
                     let self_val_as_char = char::from_digit(self_val_as_u32, DEFAULT_RADIX_10)
-                        .ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                        .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Char(self_val_as_char))
                 }
                 ValueType::UInt32 => {
                     let self_val: u32 = self.try_into()?; // should never fail!
                     let self_val_as_char = char::from_digit(self_val, DEFAULT_RADIX_10)
-                        .ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                        .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Char(self_val_as_char))
                 }
                 ValueType::UInt64 => {
@@ -85,12 +72,7 @@ impl Value {
                         })
                     })?;
                     let self_val_as_char = char::from_digit(self_val_as_u32, DEFAULT_RADIX_10)
-                        .ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                        .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Char(self_val_as_char))
                 }
                 ValueType::UInt128 => {
@@ -102,12 +84,7 @@ impl Value {
                         })
                     })?;
                     let self_val_as_char = char::from_digit(self_val_as_u32, DEFAULT_RADIX_10)
-                        .ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                        .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Char(self_val_as_char))
                 }
                 ValueType::Int8 => {
@@ -115,20 +92,10 @@ impl Value {
                     if self_val >= 0 {
                         let self_val_as_u32 = u32::try_from(self_val).unwrap(); // checked above and a positive signed int must fit into an usigned one, if the value is positive
                         let self_val_as_char = char::from_digit(self_val_as_u32, DEFAULT_RADIX_10)
-                            .ok_or_else(|| {
-                                VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                    src: self.clone(),
-                                    target_type,
-                                })
-                            })?;
+                            .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                         Ok(Value::Char(self_val_as_char))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Int16 => {
@@ -136,20 +103,10 @@ impl Value {
                     if self_val >= 0 {
                         let self_val_as_u32 = u32::try_from(self_val).unwrap(); // checked above and a positive signed int must fit into an usigned one, if the value is positive
                         let self_val_as_char = char::from_digit(self_val_as_u32, DEFAULT_RADIX_10)
-                            .ok_or_else(|| {
-                                VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                    src: self.clone(),
-                                    target_type,
-                                })
-                            })?;
+                            .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                         Ok(Value::Char(self_val_as_char))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Int32 => {
@@ -157,20 +114,10 @@ impl Value {
                     if self_val >= 0 {
                         let self_val_as_u32 = u32::try_from(self_val).unwrap(); // checked above and a positive signed int must fit into an usigned one, if the value is positive
                         let self_val_as_char = char::from_digit(self_val_as_u32, DEFAULT_RADIX_10)
-                            .ok_or_else(|| {
-                                VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                    src: self.clone(),
-                                    target_type,
-                                })
-                            })?;
+                            .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                         Ok(Value::Char(self_val_as_char))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Int64 => {
@@ -178,20 +125,10 @@ impl Value {
                     if self_val >= 0 {
                         let self_val_as_u32 = u32::try_from(self_val).unwrap(); // checked above and a positive signed int must fit into an usigned one, if the value is positive
                         let self_val_as_char = char::from_digit(self_val_as_u32, DEFAULT_RADIX_10)
-                            .ok_or_else(|| {
-                                VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                    src: self.clone(),
-                                    target_type,
-                                })
-                            })?;
+                            .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                         Ok(Value::Char(self_val_as_char))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Int128 => {
@@ -199,64 +136,19 @@ impl Value {
                     if self_val >= 0 {
                         let self_val_as_u32 = u32::try_from(self_val).unwrap(); // checked above and a positive signed int must fit into an usigned one, if the value is positive
                         let self_val_as_char = char::from_digit(self_val_as_u32, DEFAULT_RADIX_10)
-                            .ok_or_else(|| {
-                                VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                    src: self.clone(),
-                                    target_type,
-                                })
-                            })?;
+                            .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                         Ok(Value::Char(self_val_as_char))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
-                ValueType::Float32 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::Float64 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::Bool => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::Decimal => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::NaiveDate => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::NaiveDateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::DateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
+                ValueType::Float32 => Err(mk_not_rep_err(self, target_type)),
+                ValueType::Float64 => Err(mk_not_rep_err(self, target_type)),
+                ValueType::Bool => Err(mk_not_rep_err(self, target_type)),
+                ValueType::Decimal => Err(mk_not_rep_err(self, target_type)),
+                ValueType::NaiveDate | ValueType::NaiveDateTime | ValueType::DateTime => {
+                    Err(mk_not_rep_err(self, target_type))
+                }
             },
             ValueType::String => match from_type {
                 ValueType::Char => {
@@ -336,139 +228,89 @@ impl Value {
             ValueType::Int8 => match from_type {
                 ValueType::Char => {
                     let self_val: char = self.try_into()?;
-                    let self_val_as_digit_u32 =
-                        self_val.to_digit(DEFAULT_RADIX_10).ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type: target_type.clone(),
-                            })
-                        })?;
-                    let self_val_as_target_primitive: i8 =
-                        self_val_as_digit_u32.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
-                    Ok(Value::Int8(self_val_as_target_primitive))
+                    match self_val.to_digit(DEFAULT_RADIX_10) {
+                        Some(self_val_as_digit_u32) => match self_val_as_digit_u32.try_into() {
+                            Ok(self_val_as_target_primitive) => {
+                                Ok(Value::Int8(self_val_as_target_primitive)) // success!
+                            }
+                            Err(_) => Err(mk_not_rep_err(self, target_type)),
+                        },
+                        None => Err(mk_not_rep_err(self, target_type)),
+                    }
                 }
                 ValueType::String => {
                     let self_val: String = self.try_into()?;
                     if self_val.is_empty() {
-                        return Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ));
+                        Err(mk_not_rep_err(self, target_type))
+                    } else {
+                        let self_val_as_target_primitive: i8 = self_val
+                            .parse::<i8>()
+                            .map_err(|_err| mk_not_rep_err(self, target_type))?;
+                        Ok(Value::Int8(self_val_as_target_primitive))
                     }
-                    let self_val_as_target_primitive: i8 =
-                        self_val.parse::<i8>().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type: target_type.clone(),
-                            })
-                        })?;
-                    Ok(Value::Int8(self_val_as_target_primitive))
                 }
                 ValueType::Int8 => Ok(self.clone()),
                 ValueType::Int16 => {
                     let self_val_primitive: i16 = self.try_into()?;
-                    let self_val_as_target_primitive: i8 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: i8 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Int8(self_val_as_target_primitive))
                 }
                 ValueType::Int32 => {
                     let self_val_primitive: i32 = self.try_into()?;
-                    let self_val_as_target_primitive: i8 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: i8 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Int8(self_val_as_target_primitive))
                 }
                 ValueType::Int64 => {
                     let self_val_primitive: i64 = self.try_into()?;
-                    let self_val_as_target_primitive: i8 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: i8 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Int8(self_val_as_target_primitive))
                 }
                 ValueType::Int128 => {
                     let self_val_primitive: i128 = self.try_into()?;
-                    let self_val_as_target_primitive: i8 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: i8 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Int8(self_val_as_target_primitive))
                 }
                 ValueType::UInt8 => {
                     let self_val_primitive: u8 = self.try_into()?;
-                    let self_val_as_target_primitive: i8 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: i8 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Int8(self_val_as_target_primitive))
                 }
                 ValueType::UInt16 => {
                     let self_val_primitive: u16 = self.try_into()?;
-                    let self_val_as_target_primitive: i8 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: i8 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Int8(self_val_as_target_primitive))
                 }
                 ValueType::UInt32 => {
                     let self_val_primitive: u32 = self.try_into()?;
-                    let self_val_as_target_primitive: i8 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: i8 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Int8(self_val_as_target_primitive))
                 }
                 ValueType::UInt64 => {
                     let self_val_primitive: u64 = self.try_into()?;
-                    let self_val_as_target_primitive: i8 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: i8 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Int8(self_val_as_target_primitive))
                 }
                 ValueType::UInt128 => {
                     let self_val_primitive: u128 = self.try_into()?;
-                    let self_val_as_target_primitive: i8 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: i8 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Int8(self_val_as_target_primitive))
                 }
                 ValueType::Float32 => {
@@ -479,12 +321,7 @@ impl Value {
                     {
                         Ok(Value::Int8(self_val_primitive as i8))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Float64 => {
@@ -495,12 +332,7 @@ impl Value {
                     {
                         Ok(Value::Int8(self_val_primitive as i8))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Bool => {
@@ -515,79 +347,41 @@ impl Value {
                 ValueType::Decimal => {
                     let self_val: Decimal = self.try_into()?;
                     if self_val.fract().is_zero() {
-                        let self_val_as_target_primitive: i8 =
-                            self_val.to_i8().ok_or_else(|| {
-                                VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                    src: self.clone(),
-                                    target_type,
-                                })
-                            })?;
+                        let self_val_as_target_primitive: i8 = self_val
+                            .to_i8()
+                            .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                         Ok(Value::Int8(self_val_as_target_primitive))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
-                ValueType::NaiveDate => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::NaiveDateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::DateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
+                ValueType::NaiveDate | ValueType::NaiveDateTime | ValueType::DateTime => {
+                    Err(mk_not_rep_err(self, target_type))
+                }
             },
             ValueType::Int16 => match from_type {
                 ValueType::Char => {
                     let self_val: char = self.try_into()?;
-                    let self_val_as_digit_u32 =
-                        self_val.to_digit(DEFAULT_RADIX_10).ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type: target_type.clone(),
-                            })
-                        })?;
-                    let self_val_as_target_primitive: i16 =
-                        self_val_as_digit_u32.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
-                    Ok(Value::Int16(self_val_as_target_primitive))
+                    match self_val.to_digit(DEFAULT_RADIX_10) {
+                        Some(self_val_as_digit_u32) => match self_val_as_digit_u32.try_into() {
+                            Ok(self_val_as_target_primitive) => {
+                                Ok(Value::Int16(self_val_as_target_primitive)) // success!
+                            }
+                            Err(_) => Err(mk_not_rep_err(self, target_type)),
+                        },
+                        None => Err(mk_not_rep_err(self, target_type)),
+                    }
                 }
                 ValueType::String => {
                     let self_val: String = self.try_into()?;
                     if self_val.is_empty() {
-                        return Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ));
+                        Err(mk_not_rep_err(self, target_type))
+                    } else {
+                        let self_val_as_target_primitive: i16 = self_val
+                            .parse::<i16>()
+                            .map_err(|_err| mk_not_rep_err(self, target_type))?;
+                        Ok(Value::Int16(self_val_as_target_primitive))
                     }
-                    let self_val_as_target_primitive: i16 =
-                        self_val.parse::<i16>().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type: target_type.clone(),
-                            })
-                        })?;
-                    Ok(Value::Int16(self_val_as_target_primitive))
                 }
                 ValueType::Int8 => {
                     let self_val_primitive: i8 = self.try_into()?;
@@ -597,35 +391,23 @@ impl Value {
                 ValueType::Int16 => Ok(self.clone()),
                 ValueType::Int32 => {
                     let self_val_primitive: i32 = self.try_into()?;
-                    let self_val_as_target_primitive: i16 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: i16 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Int16(self_val_as_target_primitive))
                 }
                 ValueType::Int64 => {
                     let self_val_primitive: i64 = self.try_into()?;
-                    let self_val_as_target_primitive: i16 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: i16 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Int16(self_val_as_target_primitive))
                 }
                 ValueType::Int128 => {
                     let self_val_primitive: i128 = self.try_into()?;
-                    let self_val_as_target_primitive: i16 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: i16 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Int16(self_val_as_target_primitive))
                 }
                 ValueType::UInt8 => {
@@ -635,46 +417,30 @@ impl Value {
                 }
                 ValueType::UInt16 => {
                     let self_val_primitive: u16 = self.try_into()?;
-                    let self_val_as_target_primitive: i16 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: i16 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Int16(self_val_as_target_primitive))
                 }
                 ValueType::UInt32 => {
                     let self_val_primitive: u32 = self.try_into()?;
-                    let self_val_as_target_primitive: i16 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: i16 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Int16(self_val_as_target_primitive))
                 }
                 ValueType::UInt64 => {
                     let self_val_primitive: u64 = self.try_into()?;
-                    let self_val_as_target_primitive: i16 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: i16 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Int16(self_val_as_target_primitive))
                 }
                 ValueType::UInt128 => {
                     let self_val_primitive: u128 = self.try_into()?;
-                    let self_val_as_target_primitive: i16 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: i16 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Int16(self_val_as_target_primitive))
                 }
                 ValueType::Float32 => {
@@ -685,12 +451,7 @@ impl Value {
                     {
                         Ok(Value::Int16(self_val_primitive as i16))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Float64 => {
@@ -701,12 +462,7 @@ impl Value {
                     {
                         Ok(Value::Int16(self_val_primitive as i16))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Bool => {
@@ -721,79 +477,41 @@ impl Value {
                 ValueType::Decimal => {
                     let self_val: Decimal = self.try_into()?;
                     if self_val.fract().is_zero() {
-                        let self_val_as_target_primitive: i16 =
-                            self_val.to_i16().ok_or_else(|| {
-                                VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                    src: self.clone(),
-                                    target_type,
-                                })
-                            })?;
+                        let self_val_as_target_primitive: i16 = self_val
+                            .to_i16()
+                            .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                         Ok(Value::Int16(self_val_as_target_primitive))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
-                ValueType::NaiveDate => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::NaiveDateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::DateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
+                ValueType::NaiveDate | ValueType::NaiveDateTime | ValueType::DateTime => {
+                    Err(mk_not_rep_err(self, target_type))
+                }
             },
             ValueType::Int32 => match from_type {
                 ValueType::Char => {
                     let self_val: char = self.try_into()?;
-                    let self_val_as_digit_u32 =
-                        self_val.to_digit(DEFAULT_RADIX_10).ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type: target_type.clone(),
-                            })
-                        })?;
-                    let self_val_as_target_primitive: i32 =
-                        self_val_as_digit_u32.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
-                    Ok(Value::Int32(self_val_as_target_primitive))
+                    match self_val.to_digit(DEFAULT_RADIX_10) {
+                        Some(self_val_as_digit_u32) => match self_val_as_digit_u32.try_into() {
+                            Ok(self_val_as_target_primitive) => {
+                                Ok(Value::Int32(self_val_as_target_primitive)) // success!
+                            }
+                            Err(_) => Err(mk_not_rep_err(self, target_type)),
+                        },
+                        None => Err(mk_not_rep_err(self, target_type)),
+                    }
                 }
                 ValueType::String => {
                     let self_val: String = self.try_into()?;
                     if self_val.is_empty() {
-                        return Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ));
+                        Err(mk_not_rep_err(self, target_type))
+                    } else {
+                        let self_val_as_target_primitive: i32 = self_val
+                            .parse::<i32>()
+                            .map_err(|_err| mk_not_rep_err(self, target_type))?;
+                        Ok(Value::Int32(self_val_as_target_primitive))
                     }
-                    let self_val_as_target_primitive: i32 =
-                        self_val.parse::<i32>().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type: target_type.clone(),
-                            })
-                        })?;
-                    Ok(Value::Int32(self_val_as_target_primitive))
                 }
                 ValueType::Int8 => {
                     let self_val_primitive: i8 = self.try_into()?;
@@ -808,24 +526,16 @@ impl Value {
                 ValueType::Int32 => Ok(self.clone()),
                 ValueType::Int64 => {
                     let self_val_primitive: i64 = self.try_into()?;
-                    let self_val_as_target_primitive: i32 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: i32 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Int32(self_val_as_target_primitive))
                 }
                 ValueType::Int128 => {
                     let self_val_primitive: i128 = self.try_into()?;
-                    let self_val_as_target_primitive: i32 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: i32 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Int32(self_val_as_target_primitive))
                 }
                 ValueType::UInt8 => {
@@ -840,35 +550,23 @@ impl Value {
                 }
                 ValueType::UInt32 => {
                     let self_val_primitive: u32 = self.try_into()?;
-                    let self_val_as_target_primitive: i32 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: i32 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Int32(self_val_as_target_primitive))
                 }
                 ValueType::UInt64 => {
                     let self_val_primitive: u64 = self.try_into()?;
-                    let self_val_as_target_primitive: i32 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: i32 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Int32(self_val_as_target_primitive))
                 }
                 ValueType::UInt128 => {
                     let self_val_primitive: u128 = self.try_into()?;
-                    let self_val_as_target_primitive: i32 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: i32 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Int32(self_val_as_target_primitive))
                 }
                 ValueType::Float32 => {
@@ -879,12 +577,7 @@ impl Value {
                     {
                         Ok(Value::Int32(self_val_primitive as i32))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Float64 => {
@@ -895,12 +588,7 @@ impl Value {
                     {
                         Ok(Value::Int32(self_val_primitive as i32))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Bool => {
@@ -915,79 +603,41 @@ impl Value {
                 ValueType::Decimal => {
                     let self_val: Decimal = self.try_into()?;
                     if self_val.fract().is_zero() {
-                        let self_val_as_target_primitive: i32 =
-                            self_val.to_i32().ok_or_else(|| {
-                                VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                    src: self.clone(),
-                                    target_type,
-                                })
-                            })?;
+                        let self_val_as_target_primitive: i32 = self_val
+                            .to_i32()
+                            .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                         Ok(Value::Int32(self_val_as_target_primitive))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
-                ValueType::NaiveDate => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::NaiveDateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::DateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
+                ValueType::NaiveDate | ValueType::NaiveDateTime | ValueType::DateTime => {
+                    Err(mk_not_rep_err(self, target_type))
+                }
             },
             ValueType::Int64 => match from_type {
                 ValueType::Char => {
                     let self_val: char = self.try_into()?;
-                    let self_val_as_digit_u32 =
-                        self_val.to_digit(DEFAULT_RADIX_10).ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type: target_type.clone(),
-                            })
-                        })?;
-                    let self_val_as_target_primitive: i64 =
-                        self_val_as_digit_u32.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
-                    Ok(Value::Int64(self_val_as_target_primitive))
+                    match self_val.to_digit(DEFAULT_RADIX_10) {
+                        Some(self_val_as_digit_u32) => match self_val_as_digit_u32.try_into() {
+                            Ok(self_val_as_target_primitive) => {
+                                Ok(Value::Int64(self_val_as_target_primitive)) // success!
+                            }
+                            Err(_) => Err(mk_not_rep_err(self, target_type)),
+                        },
+                        None => Err(mk_not_rep_err(self, target_type)),
+                    }
                 }
                 ValueType::String => {
                     let self_val: String = self.try_into()?;
                     if self_val.is_empty() {
-                        return Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ));
+                        Err(mk_not_rep_err(self, target_type))
+                    } else {
+                        let self_val_as_target_primitive: i64 = self_val
+                            .parse::<i64>()
+                            .map_err(|_err| mk_not_rep_err(self, target_type))?;
+                        Ok(Value::Int64(self_val_as_target_primitive))
                     }
-                    let self_val_as_target_primitive: i64 =
-                        self_val.parse::<i64>().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type: target_type.clone(),
-                            })
-                        })?;
-                    Ok(Value::Int64(self_val_as_target_primitive))
                 }
                 ValueType::Int8 => {
                     let self_val_primitive: i8 = self.try_into()?;
@@ -1007,13 +657,9 @@ impl Value {
                 ValueType::Int64 => Ok(self.clone()),
                 ValueType::Int128 => {
                     let self_val_primitive: i128 = self.try_into()?;
-                    let self_val_as_target_primitive: i64 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: i64 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Int64(self_val_as_target_primitive))
                 }
                 ValueType::UInt8 => {
@@ -1033,24 +679,16 @@ impl Value {
                 }
                 ValueType::UInt64 => {
                     let self_val_primitive: u64 = self.try_into()?;
-                    let self_val_as_target_primitive: i64 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: i64 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Int64(self_val_as_target_primitive))
                 }
                 ValueType::UInt128 => {
                     let self_val_primitive: u128 = self.try_into()?;
-                    let self_val_as_target_primitive: i64 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: i64 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Int64(self_val_as_target_primitive))
                 }
                 ValueType::Float32 => {
@@ -1061,12 +699,7 @@ impl Value {
                     {
                         Ok(Value::Int64(self_val_primitive as i64))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Float64 => {
@@ -1077,12 +710,7 @@ impl Value {
                     {
                         Ok(Value::Int64(self_val_primitive as i64))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Bool => {
@@ -1097,79 +725,41 @@ impl Value {
                 ValueType::Decimal => {
                     let self_val: Decimal = self.try_into()?;
                     if self_val.fract().is_zero() {
-                        let self_val_as_target_primitive: i64 =
-                            self_val.to_i64().ok_or_else(|| {
-                                VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                    src: self.clone(),
-                                    target_type,
-                                })
-                            })?;
+                        let self_val_as_target_primitive: i64 = self_val
+                            .to_i64()
+                            .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                         Ok(Value::Int64(self_val_as_target_primitive))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
-                ValueType::NaiveDate => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::NaiveDateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::DateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
+                ValueType::NaiveDate | ValueType::NaiveDateTime | ValueType::DateTime => {
+                    Err(mk_not_rep_err(self, target_type))
+                }
             },
             ValueType::Int128 => match from_type {
                 ValueType::Char => {
                     let self_val: char = self.try_into()?;
-                    let self_val_as_digit_u32 =
-                        self_val.to_digit(DEFAULT_RADIX_10).ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type: target_type.clone(),
-                            })
-                        })?;
-                    let self_val_as_target_primitive: i128 =
-                        self_val_as_digit_u32.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
-                    Ok(Value::Int128(self_val_as_target_primitive))
+                    match self_val.to_digit(DEFAULT_RADIX_10) {
+                        Some(self_val_as_digit_u32) => match self_val_as_digit_u32.try_into() {
+                            Ok(self_val_as_target_primitive) => {
+                                Ok(Value::Int128(self_val_as_target_primitive)) // success!
+                            }
+                            Err(_) => Err(mk_not_rep_err(self, target_type)),
+                        },
+                        None => Err(mk_not_rep_err(self, target_type)),
+                    }
                 }
                 ValueType::String => {
                     let self_val: String = self.try_into()?;
                     if self_val.is_empty() {
-                        return Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ));
+                        Err(mk_not_rep_err(self, target_type))
+                    } else {
+                        let self_val_as_target_primitive: i128 = self_val
+                            .parse::<i128>()
+                            .map_err(|_err| mk_not_rep_err(self, target_type))?;
+                        Ok(Value::Int128(self_val_as_target_primitive))
                     }
-                    let self_val_as_target_primitive: i128 =
-                        self_val.parse::<i128>().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type: target_type.clone(),
-                            })
-                        })?;
-                    Ok(Value::Int128(self_val_as_target_primitive))
                 }
                 ValueType::Int8 => {
                     let self_val_primitive: i8 = self.try_into()?;
@@ -1214,13 +804,9 @@ impl Value {
                 }
                 ValueType::UInt128 => {
                     let self_val_primitive: u128 = self.try_into()?;
-                    let self_val_as_target_primitive: i128 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: i128 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Int128(self_val_as_target_primitive))
                 }
                 ValueType::Float32 => {
@@ -1228,12 +814,7 @@ impl Value {
                     if self_val_primitive.fract() == 0.0 {
                         Ok(Value::Int128(self_val_primitive as i128))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Float64 => {
@@ -1241,12 +822,7 @@ impl Value {
                     if self_val_primitive.fract() == 0.0 {
                         Ok(Value::Int128(self_val_primitive as i128))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Bool => {
@@ -1261,178 +837,108 @@ impl Value {
                 ValueType::Decimal => {
                     let self_val: Decimal = self.try_into()?;
                     if self_val.fract().is_zero() {
-                        let self_val_as_target_primitive: i128 =
-                            self_val.to_i128().ok_or_else(|| {
-                                VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                    src: self.clone(),
-                                    target_type,
-                                })
-                            })?;
+                        let self_val_as_target_primitive: i128 = self_val
+                            .to_i128()
+                            .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                         Ok(Value::Int128(self_val_as_target_primitive))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
-                ValueType::NaiveDate => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::NaiveDateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::DateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
+                ValueType::NaiveDate | ValueType::NaiveDateTime | ValueType::DateTime => {
+                    Err(mk_not_rep_err(self, target_type))
+                }
             },
             ValueType::UInt8 => match from_type {
                 ValueType::Char => {
                     let self_val: char = self.try_into()?;
-                    let self_val_as_digit_u32 =
-                        self_val.to_digit(DEFAULT_RADIX_10).ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type: target_type.clone(),
-                            })
-                        })?;
-                    let self_val_as_target_primitive: u8 =
-                        self_val_as_digit_u32.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
-                    Ok(Value::UInt8(self_val_as_target_primitive))
+                    match self_val.to_digit(DEFAULT_RADIX_10) {
+                        Some(self_val_as_digit_u32) => match self_val_as_digit_u32.try_into() {
+                            Ok(self_val_as_target_primitive) => {
+                                Ok(Value::UInt8(self_val_as_target_primitive)) // success!
+                            }
+                            Err(_) => Err(mk_not_rep_err(self, target_type)),
+                        },
+                        None => Err(mk_not_rep_err(self, target_type)),
+                    }
                 }
                 ValueType::String => {
                     let self_val: String = self.try_into()?;
                     if self_val.is_empty() {
-                        return Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ));
+                        Err(mk_not_rep_err(self, target_type))
+                    } else {
+                        let self_val_as_target_primitive: u8 =
+                            self_val.parse::<u8>().map_err(|_err| {
+                                VenumError::Conversion(ConversionError::NotRepresentableAs {
+                                    src: self.clone(),
+                                    target_type: target_type.clone(),
+                                })
+                            })?;
+                        Ok(Value::UInt8(self_val_as_target_primitive))
                     }
-                    let self_val_as_target_primitive: u8 =
-                        self_val.parse::<u8>().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type: target_type.clone(),
-                            })
-                        })?;
-                    Ok(Value::UInt8(self_val_as_target_primitive))
                 }
                 ValueType::Int8 => {
                     let self_val_primitive: i8 = self.try_into()?;
-                    let self_val_as_target_primitive: u8 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u8 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt8(self_val_as_target_primitive))
                 }
                 ValueType::Int16 => {
                     let self_val_primitive: i16 = self.try_into()?;
-                    let self_val_as_target_primitive: u8 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u8 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt8(self_val_as_target_primitive))
                 }
                 ValueType::Int32 => {
                     let self_val_primitive: i32 = self.try_into()?;
-                    let self_val_as_target_primitive: u8 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u8 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt8(self_val_as_target_primitive))
                 }
                 ValueType::Int64 => {
                     let self_val_primitive: i64 = self.try_into()?;
-                    let self_val_as_target_primitive: u8 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u8 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt8(self_val_as_target_primitive))
                 }
                 ValueType::Int128 => {
                     let self_val_primitive: i128 = self.try_into()?;
-                    let self_val_as_target_primitive: u8 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u8 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt8(self_val_as_target_primitive))
                 }
                 ValueType::UInt8 => Ok(self.clone()),
                 ValueType::UInt16 => {
                     let self_val_primitive: u16 = self.try_into()?;
-                    let self_val_as_target_primitive: u8 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u8 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt8(self_val_as_target_primitive))
                 }
                 ValueType::UInt32 => {
                     let self_val_primitive: u32 = self.try_into()?;
-                    let self_val_as_target_primitive: u8 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u8 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt8(self_val_as_target_primitive))
                 }
                 ValueType::UInt64 => {
                     let self_val_primitive: u64 = self.try_into()?;
-                    let self_val_as_target_primitive: u8 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u8 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt8(self_val_as_target_primitive))
                 }
                 ValueType::UInt128 => {
                     let self_val_primitive: u128 = self.try_into()?;
-                    let self_val_as_target_primitive: u8 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u8 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt8(self_val_as_target_primitive))
                 }
                 ValueType::Float32 => {
@@ -1443,12 +949,7 @@ impl Value {
                     {
                         Ok(Value::UInt8(self_val_primitive as u8))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Float64 => {
@@ -1459,12 +960,7 @@ impl Value {
                     {
                         Ok(Value::UInt8(self_val_primitive as u8))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Bool => {
@@ -1479,133 +975,79 @@ impl Value {
                 ValueType::Decimal => {
                     let self_val: Decimal = self.try_into()?;
                     if self_val.is_sign_positive() && self_val.fract().is_zero() {
-                        let self_val_as_target_primitive: u8 =
-                            self_val.to_u8().ok_or_else(|| {
-                                VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                    src: self.clone(),
-                                    target_type,
-                                })
-                            })?;
+                        let self_val_as_target_primitive: u8 = self_val
+                            .to_u8()
+                            .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                         Ok(Value::UInt8(self_val_as_target_primitive))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
-                ValueType::NaiveDate => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::NaiveDateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::DateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
+                ValueType::NaiveDate | ValueType::NaiveDateTime | ValueType::DateTime => {
+                    Err(mk_not_rep_err(self, target_type))
+                }
             },
             ValueType::UInt16 => match from_type {
                 ValueType::Char => {
                     let self_val: char = self.try_into()?;
-                    let self_val_as_digit_u32 =
-                        self_val.to_digit(DEFAULT_RADIX_10).ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type: target_type.clone(),
-                            })
-                        })?;
-                    let self_val_as_target_primitive: u16 =
-                        self_val_as_digit_u32.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
-                    Ok(Value::UInt16(self_val_as_target_primitive))
+                    match self_val.to_digit(DEFAULT_RADIX_10) {
+                        Some(self_val_as_digit_u32) => match self_val_as_digit_u32.try_into() {
+                            Ok(self_val_as_target_primitive) => {
+                                Ok(Value::UInt16(self_val_as_target_primitive)) // success!
+                            }
+                            Err(_) => Err(mk_not_rep_err(self, target_type)),
+                        },
+                        None => Err(mk_not_rep_err(self, target_type)),
+                    }
                 }
                 ValueType::String => {
                     let self_val: String = self.try_into()?;
                     if self_val.is_empty() {
-                        return Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ));
+                        Err(mk_not_rep_err(self, target_type))
+                    } else {
+                        let self_val_as_target_primitive: u16 =
+                            self_val.parse::<u16>().map_err(|_err| {
+                                VenumError::Conversion(ConversionError::NotRepresentableAs {
+                                    src: self.clone(),
+                                    target_type: target_type.clone(),
+                                })
+                            })?;
+                        Ok(Value::UInt16(self_val_as_target_primitive))
                     }
-                    let self_val_as_target_primitive: u16 =
-                        self_val.parse::<u16>().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type: target_type.clone(),
-                            })
-                        })?;
-                    Ok(Value::UInt16(self_val_as_target_primitive))
                 }
                 ValueType::Int8 => {
                     let self_val_primitive: i8 = self.try_into()?;
-                    let self_val_as_target_primitive: u16 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u16 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt16(self_val_as_target_primitive))
                 }
                 ValueType::Int16 => {
                     let self_val_primitive: i16 = self.try_into()?;
-                    let self_val_as_target_primitive: u16 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u16 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt16(self_val_as_target_primitive))
                 }
                 ValueType::Int32 => {
                     let self_val_primitive: i32 = self.try_into()?;
-                    let self_val_as_target_primitive: u16 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u16 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt16(self_val_as_target_primitive))
                 }
                 ValueType::Int64 => {
                     let self_val_primitive: i64 = self.try_into()?;
-                    let self_val_as_target_primitive: u16 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u16 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt16(self_val_as_target_primitive))
                 }
                 ValueType::Int128 => {
                     let self_val_primitive: i128 = self.try_into()?;
-                    let self_val_as_target_primitive: u16 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u16 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt16(self_val_as_target_primitive))
                 }
                 ValueType::UInt8 => {
@@ -1616,35 +1058,23 @@ impl Value {
                 ValueType::UInt16 => Ok(self.clone()),
                 ValueType::UInt32 => {
                     let self_val_primitive: u32 = self.try_into()?;
-                    let self_val_as_target_primitive: u16 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u16 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt16(self_val_as_target_primitive))
                 }
                 ValueType::UInt64 => {
                     let self_val_primitive: u64 = self.try_into()?;
-                    let self_val_as_target_primitive: u16 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u16 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt16(self_val_as_target_primitive))
                 }
                 ValueType::UInt128 => {
                     let self_val_primitive: u128 = self.try_into()?;
-                    let self_val_as_target_primitive: u16 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u16 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt16(self_val_as_target_primitive))
                 }
                 ValueType::Float32 => {
@@ -1655,12 +1085,7 @@ impl Value {
                     {
                         Ok(Value::UInt16(self_val_primitive as u16))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Float64 => {
@@ -1671,12 +1096,7 @@ impl Value {
                     {
                         Ok(Value::UInt16(self_val_primitive as u16))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Bool => {
@@ -1691,133 +1111,79 @@ impl Value {
                 ValueType::Decimal => {
                     let self_val: Decimal = self.try_into()?;
                     if self_val.is_sign_positive() && self_val.fract().is_zero() {
-                        let self_val_as_target_primitive: u16 =
-                            self_val.to_u16().ok_or_else(|| {
-                                VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                    src: self.clone(),
-                                    target_type,
-                                })
-                            })?;
+                        let self_val_as_target_primitive: u16 = self_val
+                            .to_u16()
+                            .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                         Ok(Value::UInt16(self_val_as_target_primitive))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
-                ValueType::NaiveDate => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::NaiveDateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::DateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
+                ValueType::NaiveDate | ValueType::NaiveDateTime | ValueType::DateTime => {
+                    Err(mk_not_rep_err(self, target_type))
+                }
             },
             ValueType::UInt32 => match from_type {
                 ValueType::Char => {
                     let self_val: char = self.try_into()?;
-                    let self_val_as_digit_u32 =
-                        self_val.to_digit(DEFAULT_RADIX_10).ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type: target_type.clone(),
-                            })
-                        })?;
-                    let self_val_as_target_primitive: u32 =
-                        self_val_as_digit_u32.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
-                    Ok(Value::UInt32(self_val_as_target_primitive))
+                    match self_val.to_digit(DEFAULT_RADIX_10) {
+                        Some(self_val_as_digit_u32) => match self_val_as_digit_u32.try_into() {
+                            Ok(self_val_as_target_primitive) => {
+                                Ok(Value::UInt32(self_val_as_target_primitive)) // success!
+                            }
+                            Err(_) => Err(mk_not_rep_err(self, target_type)),
+                        },
+                        None => Err(mk_not_rep_err(self, target_type)),
+                    }
                 }
                 ValueType::String => {
                     let self_val: String = self.try_into()?;
                     if self_val.is_empty() {
-                        return Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ));
+                        Err(mk_not_rep_err(self, target_type))
+                    } else {
+                        let self_val_as_target_primitive: u32 =
+                            self_val.parse::<u32>().map_err(|_err| {
+                                VenumError::Conversion(ConversionError::NotRepresentableAs {
+                                    src: self.clone(),
+                                    target_type: target_type.clone(),
+                                })
+                            })?;
+                        Ok(Value::UInt32(self_val_as_target_primitive))
                     }
-                    let self_val_as_target_primitive: u32 =
-                        self_val.parse::<u32>().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type: target_type.clone(),
-                            })
-                        })?;
-                    Ok(Value::UInt32(self_val_as_target_primitive))
                 }
                 ValueType::Int8 => {
                     let self_val_primitive: i8 = self.try_into()?;
-                    let self_val_as_target_primitive: u32 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u32 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt32(self_val_as_target_primitive))
                 }
                 ValueType::Int16 => {
                     let self_val_primitive: i16 = self.try_into()?;
-                    let self_val_as_target_primitive: u32 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u32 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt32(self_val_as_target_primitive))
                 }
                 ValueType::Int32 => {
                     let self_val_primitive: i32 = self.try_into()?;
-                    let self_val_as_target_primitive: u32 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u32 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt32(self_val_as_target_primitive))
                 }
                 ValueType::Int64 => {
                     let self_val_primitive: i64 = self.try_into()?;
-                    let self_val_as_target_primitive: u32 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u32 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt32(self_val_as_target_primitive))
                 }
                 ValueType::Int128 => {
                     let self_val_primitive: i128 = self.try_into()?;
-                    let self_val_as_target_primitive: u32 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u32 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt32(self_val_as_target_primitive))
                 }
                 ValueType::UInt8 => {
@@ -1833,24 +1199,16 @@ impl Value {
                 ValueType::UInt32 => Ok(self.clone()),
                 ValueType::UInt64 => {
                     let self_val_primitive: u64 = self.try_into()?;
-                    let self_val_as_target_primitive: u32 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u32 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt32(self_val_as_target_primitive))
                 }
                 ValueType::UInt128 => {
                     let self_val_primitive: u128 = self.try_into()?;
-                    let self_val_as_target_primitive: u32 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u32 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt32(self_val_as_target_primitive))
                 }
                 ValueType::Float32 => {
@@ -1861,12 +1219,7 @@ impl Value {
                     {
                         Ok(Value::UInt32(self_val_primitive as u32))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Float64 => {
@@ -1877,12 +1230,7 @@ impl Value {
                     {
                         Ok(Value::UInt32(self_val_primitive as u32))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Bool => {
@@ -1897,133 +1245,79 @@ impl Value {
                 ValueType::Decimal => {
                     let self_val: Decimal = self.try_into()?;
                     if self_val.is_sign_positive() && self_val.fract().is_zero() {
-                        let self_val_as_target_primitive: u32 =
-                            self_val.to_u32().ok_or_else(|| {
-                                VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                    src: self.clone(),
-                                    target_type,
-                                })
-                            })?;
+                        let self_val_as_target_primitive: u32 = self_val
+                            .to_u32()
+                            .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                         Ok(Value::UInt32(self_val_as_target_primitive))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
-                ValueType::NaiveDate => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::NaiveDateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::DateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
+                ValueType::NaiveDate | ValueType::NaiveDateTime | ValueType::DateTime => {
+                    Err(mk_not_rep_err(self, target_type))
+                }
             },
             ValueType::UInt64 => match from_type {
                 ValueType::Char => {
                     let self_val: char = self.try_into()?;
-                    let self_val_as_digit_u32 =
-                        self_val.to_digit(DEFAULT_RADIX_10).ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type: target_type.clone(),
-                            })
-                        })?;
-                    let self_val_as_target_primitive: u64 =
-                        self_val_as_digit_u32.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
-                    Ok(Value::UInt64(self_val_as_target_primitive))
+                    match self_val.to_digit(DEFAULT_RADIX_10) {
+                        Some(self_val_as_digit_u32) => match self_val_as_digit_u32.try_into() {
+                            Ok(self_val_as_target_primitive) => {
+                                Ok(Value::UInt64(self_val_as_target_primitive)) // success!
+                            }
+                            Err(_) => Err(mk_not_rep_err(self, target_type)),
+                        },
+                        None => Err(mk_not_rep_err(self, target_type)),
+                    }
                 }
                 ValueType::String => {
                     let self_val: String = self.try_into()?;
                     if self_val.is_empty() {
-                        return Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ));
+                        Err(mk_not_rep_err(self, target_type))
+                    } else {
+                        let self_val_as_target_primitive: u64 =
+                            self_val.parse::<u64>().map_err(|_err| {
+                                VenumError::Conversion(ConversionError::NotRepresentableAs {
+                                    src: self.clone(),
+                                    target_type: target_type.clone(),
+                                })
+                            })?;
+                        Ok(Value::UInt64(self_val_as_target_primitive))
                     }
-                    let self_val_as_target_primitive: u64 =
-                        self_val.parse::<u64>().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type: target_type.clone(),
-                            })
-                        })?;
-                    Ok(Value::UInt64(self_val_as_target_primitive))
                 }
                 ValueType::Int8 => {
                     let self_val_primitive: i8 = self.try_into()?;
-                    let self_val_as_target_primitive: u64 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u64 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt64(self_val_as_target_primitive))
                 }
                 ValueType::Int16 => {
                     let self_val_primitive: i16 = self.try_into()?;
-                    let self_val_as_target_primitive: u64 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u64 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt64(self_val_as_target_primitive))
                 }
                 ValueType::Int32 => {
                     let self_val_primitive: i32 = self.try_into()?;
-                    let self_val_as_target_primitive: u64 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u64 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt64(self_val_as_target_primitive))
                 }
                 ValueType::Int64 => {
                     let self_val_primitive: i64 = self.try_into()?;
-                    let self_val_as_target_primitive: u64 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u64 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt64(self_val_as_target_primitive))
                 }
                 ValueType::Int128 => {
                     let self_val_primitive: i128 = self.try_into()?;
-                    let self_val_as_target_primitive: u64 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u64 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt64(self_val_as_target_primitive))
                 }
                 ValueType::UInt8 => {
@@ -2044,13 +1338,9 @@ impl Value {
                 ValueType::UInt64 => Ok(self.clone()),
                 ValueType::UInt128 => {
                     let self_val_primitive: u128 = self.try_into()?;
-                    let self_val_as_target_primitive: u64 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u64 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt64(self_val_as_target_primitive))
                 }
                 ValueType::Float32 => {
@@ -2058,12 +1348,7 @@ impl Value {
                     if self_val_primitive.fract() == 0.0 && self_val_primitive > 0.0 {
                         Ok(Value::UInt64(self_val_primitive as u64))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Float64 => {
@@ -2071,12 +1356,7 @@ impl Value {
                     if self_val_primitive.fract() == 0.0 && self_val_primitive > 0.0 {
                         Ok(Value::UInt64(self_val_primitive as u64))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Bool => {
@@ -2091,133 +1371,80 @@ impl Value {
                 ValueType::Decimal => {
                     let self_val: Decimal = self.try_into()?;
                     if self_val.is_sign_positive() && self_val.fract().is_zero() {
-                        let self_val_as_target_primitive: u64 =
-                            self_val.to_u64().ok_or_else(|| {
-                                VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                    src: self.clone(),
-                                    target_type,
-                                })
-                            })?;
+                        let self_val_as_target_primitive: u64 = self_val
+                            .to_u64()
+                            .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                         Ok(Value::UInt64(self_val_as_target_primitive))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
-                ValueType::NaiveDate => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::NaiveDateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::DateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
+                ValueType::NaiveDate | ValueType::NaiveDateTime | ValueType::DateTime => {
+                    Err(mk_not_rep_err(self, target_type))
+                }
             },
             ValueType::UInt128 => match from_type {
                 ValueType::Char => {
                     let self_val: char = self.try_into()?;
-                    let self_val_as_digit_u32 =
-                        self_val.to_digit(DEFAULT_RADIX_10).ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type: target_type.clone(),
-                            })
-                        })?;
-                    let self_val_as_target_primitive: u128 =
-                        self_val_as_digit_u32.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
-                    Ok(Value::UInt128(self_val_as_target_primitive))
+                    match self_val.to_digit(DEFAULT_RADIX_10) {
+                        Some(self_val_as_digit_u32) => match self_val_as_digit_u32.try_into() {
+                            Ok(self_val_as_target_primitive) => {
+                                Ok(Value::UInt128(self_val_as_target_primitive))
+                                // success!
+                            }
+                            Err(_) => Err(mk_not_rep_err(self, target_type)),
+                        },
+                        None => Err(mk_not_rep_err(self, target_type)),
+                    }
                 }
                 ValueType::String => {
                     let self_val: String = self.try_into()?;
                     if self_val.is_empty() {
-                        return Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ));
+                        Err(mk_not_rep_err(self, target_type))
+                    } else {
+                        let self_val_as_target_primitive: u128 =
+                            self_val.parse::<u128>().map_err(|_err| {
+                                VenumError::Conversion(ConversionError::NotRepresentableAs {
+                                    src: self.clone(),
+                                    target_type: target_type.clone(),
+                                })
+                            })?;
+                        Ok(Value::UInt128(self_val_as_target_primitive))
                     }
-                    let self_val_as_target_primitive: u128 =
-                        self_val.parse::<u128>().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type: target_type.clone(),
-                            })
-                        })?;
-                    Ok(Value::UInt128(self_val_as_target_primitive))
                 }
                 ValueType::Int8 => {
                     let self_val_primitive: i8 = self.try_into()?;
-                    let self_val_as_target_primitive: u128 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u128 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt128(self_val_as_target_primitive))
                 }
                 ValueType::Int16 => {
                     let self_val_primitive: i16 = self.try_into()?;
-                    let self_val_as_target_primitive: u128 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u128 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt128(self_val_as_target_primitive))
                 }
                 ValueType::Int32 => {
                     let self_val_primitive: i32 = self.try_into()?;
-                    let self_val_as_target_primitive: u128 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u128 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt128(self_val_as_target_primitive))
                 }
                 ValueType::Int64 => {
                     let self_val_primitive: i64 = self.try_into()?;
-                    let self_val_as_target_primitive: u128 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u128 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt128(self_val_as_target_primitive))
                 }
                 ValueType::Int128 => {
                     let self_val_primitive: i128 = self.try_into()?;
-                    let self_val_as_target_primitive: u128 =
-                        self_val_primitive.try_into().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: u128 = self_val_primitive
+                        .try_into()
+                        .map_err(|_err| mk_not_rep_err(self, target_type))?;
                     Ok(Value::UInt128(self_val_as_target_primitive))
                 }
                 ValueType::UInt8 => {
@@ -2246,12 +1473,7 @@ impl Value {
                     if self_val_primitive.fract() == 0.0 && self_val_primitive > 0.0 {
                         Ok(Value::UInt128(self_val_primitive as u128))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Float64 => {
@@ -2259,12 +1481,7 @@ impl Value {
                     if self_val_primitive.fract() == 0.0 && self_val_primitive > 0.0 {
                         Ok(Value::UInt128(self_val_primitive as u128))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Bool => {
@@ -2279,67 +1496,30 @@ impl Value {
                 ValueType::Decimal => {
                     let self_val: Decimal = self.try_into()?;
                     if self_val.is_sign_positive() && self_val.fract().is_zero() {
-                        let self_val_as_target_primitive: u128 =
-                            self_val.to_u128().ok_or_else(|| {
-                                VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                    src: self.clone(),
-                                    target_type,
-                                })
-                            })?;
+                        let self_val_as_target_primitive: u128 = self_val
+                            .to_u128()
+                            .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                         Ok(Value::UInt128(self_val_as_target_primitive))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
-                ValueType::NaiveDate => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::NaiveDateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::DateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
+                ValueType::NaiveDate | ValueType::NaiveDateTime | ValueType::DateTime => {
+                    Err(mk_not_rep_err(self, target_type))
+                }
             },
             ValueType::Float32 => match from_type {
-                ValueType::Char => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
+                ValueType::Char => Err(mk_not_rep_err(self, target_type)),
                 ValueType::String => {
                     let self_val: String = self.try_into()?;
                     if self_val.is_empty() {
-                        return Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ));
+                        Err(mk_not_rep_err(self, target_type))
+                    } else {
+                        let self_val_as_target_primitive: f32 = self_val
+                            .parse::<f32>()
+                            .map_err(|_err| mk_not_rep_err(self, target_type))?;
+                        Ok(Value::Float32(self_val_as_target_primitive))
                     }
-                    let self_val_as_target_primitive: f32 =
-                        self_val.parse::<f32>().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type: target_type.clone(),
-                            })
-                        })?;
-                    Ok(Value::Float32(self_val_as_target_primitive))
                 }
                 ValueType::Int8 => {
                     let self_val_primitive: i8 = self.try_into()?;
@@ -2360,12 +1540,7 @@ impl Value {
                     {
                         Ok(Value::Float32(self_val_as_interm_primitive as f32))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Int64 => {
@@ -2375,12 +1550,7 @@ impl Value {
                     if self_val_primitive == self_val_as_src_type_check {
                         Ok(Value::Float32(self_val_as_target_primitive))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Int128 => {
@@ -2390,12 +1560,7 @@ impl Value {
                     if self_val_primitive == self_val_as_src_type_check {
                         Ok(Value::Float32(self_val_as_target_primitive))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::UInt8 => {
@@ -2415,12 +1580,7 @@ impl Value {
                     if self_val_primitive == self_val_as_src_type_check {
                         Ok(Value::Float32(self_val_as_target_primitive))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::UInt64 => {
@@ -2430,12 +1590,7 @@ impl Value {
                     if self_val_primitive == self_val_as_src_type_check {
                         Ok(Value::Float32(self_val_as_target_primitive))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::UInt128 => {
@@ -2445,12 +1600,7 @@ impl Value {
                     if self_val_primitive == self_val_as_src_type_check {
                         Ok(Value::Float32(self_val_as_target_primitive))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Float32 => Ok(self.clone()),
@@ -2462,75 +1612,37 @@ impl Value {
                     {
                         Ok(Value::Float32(self_val_primitive as f32))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
-                ValueType::Bool => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
+                ValueType::Bool => Err(mk_not_rep_err(self, target_type)),
                 ValueType::Decimal => {
                     let self_val_primitive: Decimal = self.try_into()?;
-                    let self_val_as_target_primitive: f32 =
-                        self_val_primitive.to_f32().ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: f32 = self_val_primitive
+                        .to_f32()
+                        .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Float32(self_val_as_target_primitive))
                 }
-                ValueType::NaiveDate => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::NaiveDateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::DateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
+                ValueType::NaiveDate | ValueType::NaiveDateTime | ValueType::DateTime => {
+                    Err(mk_not_rep_err(self, target_type))
+                }
             },
             ValueType::Float64 => match from_type {
-                ValueType::Char => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
+                ValueType::Char => Err(mk_not_rep_err(self, target_type)),
                 ValueType::String => {
                     let self_val: String = self.try_into()?;
                     if self_val.is_empty() {
-                        return Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ));
+                        Err(mk_not_rep_err(self, target_type))
+                    } else {
+                        let self_val_as_target_primitive: f64 =
+                            self_val.parse::<f64>().map_err(|_err| {
+                                VenumError::Conversion(ConversionError::NotRepresentableAs {
+                                    src: self.clone(),
+                                    target_type: target_type.clone(),
+                                })
+                            })?;
+                        Ok(Value::Float64(self_val_as_target_primitive))
                     }
-                    let self_val_as_target_primitive: f64 =
-                        self_val.parse::<f64>().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type: target_type.clone(),
-                            })
-                        })?;
-                    Ok(Value::Float64(self_val_as_target_primitive))
                 }
                 ValueType::Int8 => {
                     let self_val_primitive: i8 = self.try_into()?;
@@ -2554,12 +1666,7 @@ impl Value {
                     if self_val_primitive == self_val_as_src_type_check {
                         Ok(Value::Float64(self_val_as_target_primitive))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Int128 => {
@@ -2569,12 +1676,7 @@ impl Value {
                     if self_val_primitive == self_val_as_src_type_check {
                         Ok(Value::Float64(self_val_as_target_primitive))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::UInt8 => {
@@ -2599,12 +1701,7 @@ impl Value {
                     if self_val_primitive == self_val_as_src_type_check {
                         Ok(Value::Float64(self_val_as_target_primitive))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::UInt128 => {
@@ -2614,12 +1711,7 @@ impl Value {
                     if self_val_primitive == self_val_as_src_type_check {
                         Ok(Value::Float64(self_val_as_target_primitive))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Float32 => {
@@ -2628,67 +1720,30 @@ impl Value {
                     Ok(Value::Float64(self_val_as_target_primitive))
                 }
                 ValueType::Float64 => Ok(self.clone()),
-                ValueType::Bool => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
+                ValueType::Bool => Err(mk_not_rep_err(self, target_type)),
                 ValueType::Decimal => {
                     let self_val_primitive: Decimal = self.try_into()?;
-                    let self_val_as_target_primitive: f64 =
-                        self_val_primitive.to_f64().ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_primitive: f64 = self_val_primitive
+                        .to_f64()
+                        .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Float64(self_val_as_target_primitive))
                 }
-                ValueType::NaiveDate => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::NaiveDateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::DateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
+                ValueType::NaiveDate | ValueType::NaiveDateTime | ValueType::DateTime => {
+                    Err(mk_not_rep_err(self, target_type))
+                }
             },
             ValueType::Bool => match from_type {
-                ValueType::Char => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
+                ValueType::Char => Err(mk_not_rep_err(self, target_type)),
                 ValueType::String => {
                     let self_val: String = self.try_into()?;
                     if self_val.is_empty() {
-                        return Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ));
+                        Err(mk_not_rep_err(self, target_type))
+                    } else {
+                        let self_val_as_target_primitive: bool = self_val
+                            .parse::<bool>()
+                            .map_err(|_err| mk_not_rep_err(self, target_type))?;
+                        Ok(Value::Bool(self_val_as_target_primitive))
                     }
-                    let self_val_as_target_primitive: bool =
-                        self_val.parse::<bool>().map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type: target_type.clone(),
-                            })
-                        })?;
-                    Ok(Value::Bool(self_val_as_target_primitive))
                 }
                 ValueType::Int8 => {
                     let self_val: i8 = self.try_into()?;
@@ -2697,12 +1752,7 @@ impl Value {
                     } else if self_val == 0 {
                         Ok(Value::Bool(false))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Int16 => {
@@ -2712,12 +1762,7 @@ impl Value {
                     } else if self_val == 0 {
                         Ok(Value::Bool(false))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Int32 => {
@@ -2727,12 +1772,7 @@ impl Value {
                     } else if self_val == 0 {
                         Ok(Value::Bool(false))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Int64 => {
@@ -2742,12 +1782,7 @@ impl Value {
                     } else if self_val == 0 {
                         Ok(Value::Bool(false))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::Int128 => {
@@ -2757,12 +1792,7 @@ impl Value {
                     } else if self_val == 0 {
                         Ok(Value::Bool(false))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::UInt8 => {
@@ -2772,12 +1802,7 @@ impl Value {
                     } else if self_val == 0 {
                         Ok(Value::Bool(false))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::UInt16 => {
@@ -2787,12 +1812,7 @@ impl Value {
                     } else if self_val == 0 {
                         Ok(Value::Bool(false))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::UInt32 => {
@@ -2802,12 +1822,7 @@ impl Value {
                     } else if self_val == 0 {
                         Ok(Value::Bool(false))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::UInt64 => {
@@ -2817,12 +1832,7 @@ impl Value {
                     } else if self_val == 0 {
                         Ok(Value::Bool(false))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
                 ValueType::UInt128 => {
@@ -2832,603 +1842,145 @@ impl Value {
                     } else if self_val == 0 {
                         Ok(Value::Bool(false))
                     } else {
-                        Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ))
+                        Err(mk_not_rep_err(self, target_type))
                     }
                 }
-                ValueType::Float32 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::Float64 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
+                ValueType::Float32 | ValueType::Float64 => Err(mk_not_rep_err(self, target_type)),
                 ValueType::Bool => Ok(self.clone()),
-                ValueType::Decimal => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::NaiveDate => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::NaiveDateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::DateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
+                ValueType::Decimal => Err(mk_not_rep_err(self, target_type)),
+                ValueType::NaiveDate | ValueType::NaiveDateTime | ValueType::DateTime => {
+                    Err(mk_not_rep_err(self, target_type))
+                }
             },
             ValueType::Decimal => match from_type {
                 // TODO: debatable if we should convert, e.g. '1' to 1.0
-                ValueType::Char => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
+                ValueType::Char => Err(mk_not_rep_err(self, target_type)),
                 ValueType::String => {
                     let self_val: String = self.try_into()?;
                     if self_val.is_empty() {
-                        return Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ));
+                        Err(mk_not_rep_err(self, target_type))
+                    } else {
+                        let self_val_as_target_type = Decimal::from_str_exact(&self_val)
+                            .map_err(|_err| mk_not_rep_err(self, target_type))?;
+                        Ok(Value::Decimal(self_val_as_target_type))
                     }
-                    let self_val_as_target_type =
-                        Decimal::from_str_exact(&self_val).map_err(|_err| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
-
-                    Ok(Value::Decimal(self_val_as_target_type))
                 }
                 ValueType::Int8 => {
                     let self_val_primitive: i8 = self.try_into()?;
-                    let self_val_as_target_type =
-                        Decimal::from_i8(self_val_primitive).ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_type = Decimal::from_i8(self_val_primitive)
+                        .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Decimal(self_val_as_target_type))
                 }
                 ValueType::Int16 => {
                     let self_val_primitive: i16 = self.try_into()?;
                     let self_val_as_target_type = Decimal::from_i16(self_val_primitive)
-                        .ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                        .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Decimal(self_val_as_target_type))
                 }
                 ValueType::Int32 => {
                     let self_val_primitive: i32 = self.try_into()?;
                     let self_val_as_target_type = Decimal::from_i32(self_val_primitive)
-                        .ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                        .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Decimal(self_val_as_target_type))
                 }
                 ValueType::Int64 => {
                     let self_val_primitive: i64 = self.try_into()?;
                     let self_val_as_target_type = Decimal::from_i64(self_val_primitive)
-                        .ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                        .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Decimal(self_val_as_target_type))
                 }
                 ValueType::Int128 => {
                     let self_val_primitive: i128 = self.try_into()?;
                     let self_val_as_target_type = Decimal::from_i128(self_val_primitive)
-                        .ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                        .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Decimal(self_val_as_target_type))
                 }
                 ValueType::UInt8 => {
                     let self_val_primitive: u8 = self.try_into()?;
-                    let self_val_as_target_type =
-                        Decimal::from_u8(self_val_primitive).ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                    let self_val_as_target_type = Decimal::from_u8(self_val_primitive)
+                        .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Decimal(self_val_as_target_type))
                 }
                 ValueType::UInt16 => {
                     let self_val_primitive: u16 = self.try_into()?;
                     let self_val_as_target_type = Decimal::from_u16(self_val_primitive)
-                        .ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                        .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Decimal(self_val_as_target_type))
                 }
                 ValueType::UInt32 => {
                     let self_val_primitive: u32 = self.try_into()?;
                     let self_val_as_target_type = Decimal::from_u32(self_val_primitive)
-                        .ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                        .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Decimal(self_val_as_target_type))
                 }
                 ValueType::UInt64 => {
                     let self_val_primitive: u64 = self.try_into()?;
                     let self_val_as_target_type = Decimal::from_u64(self_val_primitive)
-                        .ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                        .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Decimal(self_val_as_target_type))
                 }
                 ValueType::UInt128 => {
                     let self_val_primitive: u128 = self.try_into()?;
                     let self_val_as_target_type = Decimal::from_u128(self_val_primitive)
-                        .ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                        .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Decimal(self_val_as_target_type))
                 }
                 ValueType::Float32 => {
                     let self_val_primitive: f32 = self.try_into()?;
                     let self_val_as_target_type = Decimal::from_f32(self_val_primitive)
-                        .ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                        .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Decimal(self_val_as_target_type))
                 }
                 ValueType::Float64 => {
                     let self_val_primitive: f64 = self.try_into()?;
                     let self_val_as_target_type = Decimal::from_f64(self_val_primitive)
-                        .ok_or_else(|| {
-                            VenumError::Conversion(ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            })
-                        })?;
+                        .ok_or_else(|| mk_not_rep_err(self, target_type))?;
                     Ok(Value::Decimal(self_val_as_target_type))
                 }
-                ValueType::Bool => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
+                ValueType::Bool => Err(mk_not_rep_err(self, target_type)),
                 ValueType::Decimal => Ok(self.clone()),
-                ValueType::NaiveDate => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::NaiveDateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::DateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
+                ValueType::NaiveDate | ValueType::NaiveDateTime | ValueType::DateTime => {
+                    Err(mk_not_rep_err(self, target_type))
+                }
             },
             ValueType::NaiveDate => match from_type {
-                ValueType::Char => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
                 ValueType::String => {
                     let self_val: String = self.try_into()?;
                     if self_val.is_empty() {
-                        return Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ));
+                        Err(mk_not_rep_err(self, target_type))
+                    } else {
+                        Value::from_str_and_type(&self_val, &target_type)
+                            .map_err(|_err| mk_not_rep_err(self, target_type))
                     }
-                    Value::from_str_and_type(&self_val, &ValueType::NaiveDate).map_err(|_err| {
-                        VenumError::Conversion(ConversionError::NotRepresentableAs {
-                            src: self.clone(),
-                            target_type,
-                        })
-                    })
                 }
-                ValueType::Int8 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::Int16 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::Int32 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::Int64 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::Int128 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::UInt8 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::UInt16 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::UInt32 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::UInt64 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::UInt128 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::Float32 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::Float64 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::Bool => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::Decimal => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
                 ValueType::NaiveDate => Ok(self.clone()),
-                ValueType::NaiveDateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::DateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
+                _ => Err(mk_not_rep_err(self, target_type)),
             },
             ValueType::NaiveDateTime => match from_type {
-                ValueType::Char => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
                 ValueType::String => {
                     let self_val: String = self.try_into()?;
                     if self_val.is_empty() {
-                        return Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ));
+                        Err(mk_not_rep_err(self, target_type))
+                    } else {
+                        Value::from_str_and_type(&self_val, &target_type)
+                            .map_err(|_err| mk_not_rep_err(self, target_type))
                     }
-                    Value::from_str_and_type(&self_val, &ValueType::NaiveDate).map_err(|_err| {
-                        VenumError::Conversion(ConversionError::NotRepresentableAs {
-                            src: self.clone(),
-                            target_type,
-                        })
-                    })
                 }
-                ValueType::Int8 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::Int16 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::Int32 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::Int64 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::Int128 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::UInt8 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::UInt16 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::UInt32 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::UInt64 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::UInt128 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::Float32 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::Float64 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::Bool => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::Decimal => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::NaiveDate => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
                 ValueType::NaiveDateTime => Ok(self.clone()),
-                ValueType::DateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
+                _ => Err(mk_not_rep_err(self, target_type)),
             },
             ValueType::DateTime => match from_type {
-                ValueType::Char => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
                 ValueType::String => {
                     let self_val: String = self.try_into()?;
                     if self_val.is_empty() {
-                        return Err(VenumError::Conversion(
-                            ConversionError::NotRepresentableAs {
-                                src: self.clone(),
-                                target_type,
-                            },
-                        ));
+                        Err(mk_not_rep_err(self, target_type))
+                    } else {
+                        Value::from_str_and_type(&self_val, &target_type)
+                            .map_err(|_err| mk_not_rep_err(self, target_type))
                     }
-                    Value::from_str_and_type(&self_val, &ValueType::NaiveDate).map_err(|_err| {
-                        VenumError::Conversion(ConversionError::NotRepresentableAs {
-                            src: self.clone(),
-                            target_type,
-                        })
-                    })
                 }
-                ValueType::Int8 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::Int16 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::Int32 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::Int64 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::Int128 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::UInt8 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::UInt16 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::UInt32 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::UInt64 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::UInt128 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::Float32 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::Float64 => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::Bool => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::Decimal => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::NaiveDate => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
-                ValueType::NaiveDateTime => Err(VenumError::Conversion(
-                    ConversionError::NotRepresentableAs {
-                        src: self.clone(),
-                        target_type,
-                    },
-                )),
                 ValueType::DateTime => Ok(self.clone()),
+                _ => Err(mk_not_rep_err(self, target_type)),
             },
         }
     }
