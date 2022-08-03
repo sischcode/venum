@@ -933,7 +933,7 @@ impl Value {
                         self_val.parse::<u8>().map_err(|_err| {
                             VenumError::Conversion(ConversionError::NotRepresentableAs {
                                 src: self.clone(),
-                                target_type: target_type.clone(),
+                                target_type,
                             })
                         })?;
                     Ok(Value::UInt8(self_val_as_target_primitive))
@@ -1077,7 +1077,7 @@ impl Value {
                         self_val.parse::<u16>().map_err(|_err| {
                             VenumError::Conversion(ConversionError::NotRepresentableAs {
                                 src: self.clone(),
-                                target_type: target_type.clone(),
+                                target_type,
                             })
                         })?;
                     Ok(Value::UInt16(self_val_as_target_primitive))
@@ -1214,7 +1214,7 @@ impl Value {
                         self_val.parse::<u32>().map_err(|_err| {
                             VenumError::Conversion(ConversionError::NotRepresentableAs {
                                 src: self.clone(),
-                                target_type: target_type.clone(),
+                                target_type,
                             })
                         })?;
                     Ok(Value::UInt32(self_val_as_target_primitive))
@@ -1358,7 +1358,7 @@ impl Value {
                         self_val.parse::<u64>().map_err(|_err| {
                             VenumError::Conversion(ConversionError::NotRepresentableAs {
                                 src: self.clone(),
-                                target_type: target_type.clone(),
+                                target_type,
                             })
                         })?;
                     Ok(Value::UInt64(self_val_as_target_primitive))
@@ -1501,7 +1501,7 @@ impl Value {
                         self_val.parse::<u128>().map_err(|_err| {
                             VenumError::Conversion(ConversionError::NotRepresentableAs {
                                 src: self.clone(),
-                                target_type: target_type.clone(),
+                                target_type,
                             })
                         })?;
                     Ok(Value::UInt128(self_val_as_target_primitive))
@@ -1751,7 +1751,7 @@ impl Value {
                         self_val.parse::<f64>().map_err(|_err| {
                             VenumError::Conversion(ConversionError::NotRepresentableAs {
                                 src: self.clone(),
-                                target_type: target_type.clone(),
+                                target_type,
                             })
                         })?;
                     Ok(Value::Float64(self_val_as_target_primitive))
