@@ -2157,6 +2157,8 @@ mod tests {
     use super::*;
 
     mod try_convert_to_char {
+        use chrono::TimeZone;
+
         use super::*;
 
         #[test]
@@ -2359,13 +2361,77 @@ mod tests {
             Value::Int128(-1).try_convert_to_char().unwrap();
         }
 
-        // f32
-        // f64
-        // bool
-        // decimal
-        // naivedate
-        // naivedatetime
-        // datetime
+        #[test]
+        fn from_f32_err() {
+            assert!(Value::Float32(0.0).try_convert_to_char().is_err());
+            assert!(Value::Float32(0.1).try_convert_to_char().is_err());
+            assert!(Value::Float32(-1.0).try_convert_to_char().is_err());
+            assert!(Value::Float32(-0.1).try_convert_to_char().is_err());
+            assert!(Value::Float32(f32::MIN).try_convert_to_char().is_err());
+            assert!(Value::Float32(f32::MAX).try_convert_to_char().is_err());
+        }
+
+        #[test]
+        fn from_f64_err() {
+            assert!(Value::Float64(0.0).try_convert_to_char().is_err());
+            assert!(Value::Float64(0.1).try_convert_to_char().is_err());
+            assert!(Value::Float64(-1.0).try_convert_to_char().is_err());
+            assert!(Value::Float64(-0.1).try_convert_to_char().is_err());
+            assert!(Value::Float64(f64::MIN).try_convert_to_char().is_err());
+            assert!(Value::Float64(f64::MAX).try_convert_to_char().is_err());
+        }
+
+        #[test]
+        fn from_bool_err() {
+            assert!(Value::Bool(true).try_convert_to_char().is_err());
+            assert!(Value::Bool(false).try_convert_to_char().is_err());
+        }
+
+        #[test]
+        fn from_decimal_err() {
+            assert!(Value::Decimal(Decimal::new(0, 0))
+                .try_convert_to_char()
+                .is_err());
+            assert!(Value::Decimal(Decimal::new(1, 1))
+                .try_convert_to_char()
+                .is_err());
+            assert!(Value::Decimal(Decimal::new(-1, 0))
+                .try_convert_to_char()
+                .is_err());
+            assert!(Value::Decimal(Decimal::new(-1, 1))
+                .try_convert_to_char()
+                .is_err());
+            assert!(Value::Decimal(Decimal::MAX).try_convert_to_char().is_err());
+            assert!(Value::Decimal(Decimal::MAX).try_convert_to_char().is_err());
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_naive_date() {
+            Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31))
+                .try_convert_to_char()
+                .unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_naive_date_time() {
+            Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0))
+                .try_convert_to_char()
+                .unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_date_time() {
+            Value::DateTime(
+                FixedOffset::east(2 * 3600)
+                    .ymd(2022, 12, 31)
+                    .and_hms_milli(10, 0, 0, 100),
+            )
+            .try_convert_to_char()
+            .unwrap();
+        }
     }
 
     mod try_convert_to_string {
