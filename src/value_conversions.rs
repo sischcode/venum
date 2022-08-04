@@ -5588,6 +5588,227 @@ mod tests {
         }
     }
 
+    mod try_convert_to_float32 {
+        use chrono::TimeZone;
+
+        use super::*;
+
+        #[test]
+        fn from_char_err() {
+            assert!(Value::Char('1').try_convert_to_float32().is_err());
+            assert!(Value::Char('a').try_convert_to_float32().is_err());
+            assert!(Value::Char('%').try_convert_to_float32().is_err());
+        }
+
+        #[test]
+        fn from_string() {
+            assert_eq!(
+                Value::Float32(8.1),
+                Value::String(String::from("8.1"))
+                    .try_convert_to_float32()
+                    .unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_string_err_no_num() {
+            Value::String(String::from("abc"))
+                .try_convert_to_float32()
+                .unwrap();
+        }
+
+        #[test]
+        fn from_uint8() {
+            assert_eq!(
+                Value::Float32(8.0),
+                Value::UInt8(8).try_convert_to_float32().unwrap()
+            );
+            assert!(Value::UInt8(u8::MAX).try_convert_to_float32().is_ok());
+        }
+
+        #[test]
+        fn from_uint16() {
+            assert_eq!(
+                Value::Float32(8.0),
+                Value::UInt16(8).try_convert_to_float32().unwrap()
+            );
+            assert!(Value::UInt16(u16::MAX).try_convert_to_float32().is_ok());
+        }
+
+        #[test]
+        fn from_uint32() {
+            assert_eq!(
+                Value::Float32(8.0),
+                Value::UInt32(8).try_convert_to_float32().unwrap()
+            );
+            assert!(Value::UInt32(u32::MAX).try_convert_to_float32().is_ok());
+        }
+
+        #[test]
+        fn from_uint64() {
+            assert_eq!(
+                Value::Float32(8.0),
+                Value::UInt64(8).try_convert_to_float32().unwrap()
+            );
+            assert!(Value::UInt64(u64::MAX).try_convert_to_float32().is_ok());
+        }
+
+        #[test]
+        fn from_uint128() {
+            assert_eq!(
+                Value::Float32(8.0),
+                Value::UInt128(8).try_convert_to_float32().unwrap()
+            );
+            assert!(Value::UInt128(u128::MAX).try_convert_to_float32().is_ok());
+        }
+
+        #[test]
+        fn from_int8() {
+            assert_eq!(
+                Value::Float32(8.1),
+                Value::Float32(8.1).try_convert_to_float32().unwrap()
+            );
+            assert!(Value::Int8(i8::MIN).try_convert_to_float32().is_ok());
+            assert!(Value::Int8(i8::MAX).try_convert_to_float32().is_ok());
+        }
+
+        #[test]
+        fn from_int16() {
+            assert_eq!(
+                Value::Float32(8.0),
+                Value::Int16(8).try_convert_to_float32().unwrap()
+            );
+            assert!(Value::Int16(i16::MIN).try_convert_to_float32().is_ok());
+            assert!(Value::Int16(i16::MAX).try_convert_to_float32().is_ok());
+        }
+
+        #[test]
+        fn from_int32() {
+            assert_eq!(
+                Value::Float32(8.0),
+                Value::Int32(8).try_convert_to_float32().unwrap()
+            );
+            assert!(Value::Int32(i32::MIN).try_convert_to_float32().is_ok());
+            assert!(Value::Int32(i32::MAX).try_convert_to_float32().is_ok());
+        }
+
+        #[test]
+        fn from_int64() {
+            assert_eq!(
+                Value::Float32(8.0),
+                Value::Int64(8).try_convert_to_float32().unwrap()
+            );
+            assert!(Value::Int64(i64::MIN).try_convert_to_float32().is_ok());
+            assert!(Value::Int64(i64::MAX).try_convert_to_float32().is_ok());
+        }
+
+        #[test]
+        fn from_int128() {
+            assert_eq!(
+                Value::Float32(8.0),
+                Value::Int128(8).try_convert_to_float32().unwrap()
+            );
+            assert!(Value::Int128(i128::MIN).try_convert_to_float32().is_ok());
+            assert!(Value::Int128(i128::MAX).try_convert_to_float32().is_ok());
+        }
+
+        #[test]
+        fn from_float32() {
+            assert_eq!(
+                Value::Float32(8.0),
+                Value::Float32(8.0).try_convert_to_float32().unwrap()
+            );
+        }
+
+        #[test]
+        fn from_float64() {
+            assert_eq!(
+                Value::Float32(8.0),
+                Value::Float64(8.0).try_convert_to_float32().unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_float64_err_val_too_big() {
+            Value::Float64(f64::MAX as u128 as f64)
+                .try_convert_to_float32()
+                .unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_float64_err_val_too_small() {
+            Value::Float64(f64::MIN).try_convert_to_float32().unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_float64_err_val_uneven() {
+            Value::Float64(1.5).try_convert_to_float32().unwrap();
+        }
+
+        #[test]
+        fn from_bool_err() {
+            assert!(Value::Bool(true).try_convert_to_float32().is_err());
+            assert!(Value::Bool(false).try_convert_to_float32().is_err());
+        }
+
+        #[test]
+        fn from_decimal() {
+            assert_eq!(
+                Value::Float32(123.456789),
+                Value::Decimal(Decimal::new(123456789, 6))
+                    .try_convert_to_float32()
+                    .unwrap()
+            );
+        }
+
+        // // TODO: something is fish here...or I just don't get floating points, which is also in the realms of posibility
+        // #[test]
+        // #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        // fn from_decimal_err_val_too_big() {
+        //     let dec = Decimal::new(i64::MAX, 0);
+        //     let v_dec = Value::Decimal(dec);
+
+        //     let v_f32 = v_dec.try_convert_to_float32().unwrap();
+        //     let v_dec_back = v_f32.try_convert_to_decimal().unwrap();
+
+        //     println!("{}", i64::MAX);
+        //     println!("{}", dec);
+        //     println!("{:?}", v_f32);
+        //     println!("{:?}", v_dec_back);
+        // }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_naive_date() {
+            Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31))
+                .try_convert_to_float32()
+                .unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_naive_date_time() {
+            Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0))
+                .try_convert_to_float32()
+                .unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_date_time() {
+            Value::DateTime(
+                FixedOffset::east(2 * 3600)
+                    .ymd(2022, 12, 31)
+                    .and_hms_milli(10, 0, 0, 100),
+            )
+            .try_convert_to_float32()
+            .unwrap();
+        }
+    }
     // f32
     // f64
     // bool
