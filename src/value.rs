@@ -570,6 +570,7 @@ pub type OptValue = Option<Value>;
 mod tests {
     use super::*;
 
+    // TODO: more tests for from_type_string
     mod parse_from_str {
         use super::*;
 
