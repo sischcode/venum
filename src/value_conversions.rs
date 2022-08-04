@@ -2165,6 +2165,10 @@ mod tests {
                 Value::Char('a'),
                 Value::Char('a').try_convert_to_char().unwrap()
             );
+            assert_eq!(
+                Value::Char('1'),
+                Value::Char('1').try_convert_to_char().unwrap()
+            );
         }
 
         #[test]
@@ -2178,12 +2182,190 @@ mod tests {
         }
 
         #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_string_err_no_char() {
+            Value::String(String::from("abc"))
+                .try_convert_to_char()
+                .unwrap();
+        }
+
+        #[test]
         fn from_uint8() {
             assert_eq!(
                 Value::Char('1'),
                 Value::UInt8(1).try_convert_to_char().unwrap()
             );
         }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_uint8_err_no_single_digit() {
+            Value::UInt8(123).try_convert_to_char().unwrap();
+        }
+
+        #[test]
+        fn from_uint16() {
+            assert_eq!(
+                Value::Char('1'),
+                Value::UInt16(1).try_convert_to_char().unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_uint16_err_no_single_digit() {
+            Value::UInt16(123).try_convert_to_char().unwrap();
+        }
+
+        #[test]
+        fn from_uint32() {
+            assert_eq!(
+                Value::Char('1'),
+                Value::UInt32(1).try_convert_to_char().unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_uint32_err_no_single_digit() {
+            Value::UInt32(123).try_convert_to_char().unwrap();
+        }
+
+        #[test]
+        fn from_uint64() {
+            assert_eq!(
+                Value::Char('1'),
+                Value::UInt64(1).try_convert_to_char().unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_uint64_err_no_single_digit() {
+            Value::UInt64(123).try_convert_to_char().unwrap();
+        }
+
+        #[test]
+        fn from_uint128() {
+            assert_eq!(
+                Value::Char('1'),
+                Value::UInt128(1).try_convert_to_char().unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_uint128_err_no_single_digit() {
+            Value::UInt128(123).try_convert_to_char().unwrap();
+        }
+
+        #[test]
+        fn from_int8() {
+            assert_eq!(
+                Value::Char('1'),
+                Value::Int8(1).try_convert_to_char().unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_int8_err_no_single_digit() {
+            Value::Int8(123).try_convert_to_char().unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_int8_err_neg_digit() {
+            Value::Int8(-1).try_convert_to_char().unwrap();
+        }
+
+        #[test]
+        fn from_int16() {
+            assert_eq!(
+                Value::Char('1'),
+                Value::Int16(1).try_convert_to_char().unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_int16_err_no_single_digit() {
+            Value::Int16(123).try_convert_to_char().unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_int16_err_neg_digit() {
+            Value::Int16(-1).try_convert_to_char().unwrap();
+        }
+
+        #[test]
+        fn from_int32() {
+            assert_eq!(
+                Value::Char('1'),
+                Value::Int32(1).try_convert_to_char().unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_int32_err_no_single_digit() {
+            Value::Int32(123).try_convert_to_char().unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_int32_err_neg_digit() {
+            Value::Int32(-1).try_convert_to_char().unwrap();
+        }
+
+        #[test]
+        fn from_int64() {
+            assert_eq!(
+                Value::Char('1'),
+                Value::Int64(1).try_convert_to_char().unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_int64_err_no_single_digit() {
+            Value::Int64(123).try_convert_to_char().unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_int64_err_neg_digit() {
+            Value::Int64(-1).try_convert_to_char().unwrap();
+        }
+
+        #[test]
+        fn from_int128() {
+            assert_eq!(
+                Value::Char('1'),
+                Value::Int128(1).try_convert_to_char().unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_int128_err_no_single_digit() {
+            Value::Int128(123).try_convert_to_char().unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_int128_err_neg_digit() {
+            Value::Int128(-1).try_convert_to_char().unwrap();
+        }
+
+        // f32
+        // f64
+        // bool
+        // decimal
+        // naivedate
+        // naivedatetime
+        // datetime
     }
 
     mod try_convert_to_string {
@@ -5339,4 +5521,12 @@ mod tests {
             .unwrap();
         }
     }
+
+    // f32
+    // f64
+    // bool
+    // decimal
+    // naivedate
+    // naivedatetime
+    // datetime
 }
