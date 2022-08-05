@@ -1852,7 +1852,6 @@ impl Value {
         let target_type = ValueType::Bool;
 
         match self_type {
-            ValueType::Char => Err(mk_not_rep_err(self, target_type)),
             ValueType::String => {
                 let self_val: String = self.try_into()?;
                 if self_val.is_empty() {
@@ -1864,112 +1863,8 @@ impl Value {
                     Ok(Value::Bool(self_val_as_target_primitive))
                 }
             }
-            ValueType::Int8 => {
-                let self_val: i8 = self.try_into()?;
-                if self_val == 1 {
-                    Ok(Value::Bool(true))
-                } else if self_val == 0 {
-                    Ok(Value::Bool(false))
-                } else {
-                    Err(mk_not_rep_err(self, target_type))
-                }
-            }
-            ValueType::Int16 => {
-                let self_val: i16 = self.try_into()?;
-                if self_val == 1 {
-                    Ok(Value::Bool(true))
-                } else if self_val == 0 {
-                    Ok(Value::Bool(false))
-                } else {
-                    Err(mk_not_rep_err(self, target_type))
-                }
-            }
-            ValueType::Int32 => {
-                let self_val: i32 = self.try_into()?;
-                if self_val == 1 {
-                    Ok(Value::Bool(true))
-                } else if self_val == 0 {
-                    Ok(Value::Bool(false))
-                } else {
-                    Err(mk_not_rep_err(self, target_type))
-                }
-            }
-            ValueType::Int64 => {
-                let self_val: i64 = self.try_into()?;
-                if self_val == 1 {
-                    Ok(Value::Bool(true))
-                } else if self_val == 0 {
-                    Ok(Value::Bool(false))
-                } else {
-                    Err(mk_not_rep_err(self, target_type))
-                }
-            }
-            ValueType::Int128 => {
-                let self_val: i128 = self.try_into()?;
-                if self_val == 1 {
-                    Ok(Value::Bool(true))
-                } else if self_val == 0 {
-                    Ok(Value::Bool(false))
-                } else {
-                    Err(mk_not_rep_err(self, target_type))
-                }
-            }
-            ValueType::UInt8 => {
-                let self_val: u8 = self.try_into()?;
-                if self_val == 1 {
-                    Ok(Value::Bool(true))
-                } else if self_val == 0 {
-                    Ok(Value::Bool(false))
-                } else {
-                    Err(mk_not_rep_err(self, target_type))
-                }
-            }
-            ValueType::UInt16 => {
-                let self_val: u16 = self.try_into()?;
-                if self_val == 1 {
-                    Ok(Value::Bool(true))
-                } else if self_val == 0 {
-                    Ok(Value::Bool(false))
-                } else {
-                    Err(mk_not_rep_err(self, target_type))
-                }
-            }
-            ValueType::UInt32 => {
-                let self_val: u32 = self.try_into()?;
-                if self_val == 1 {
-                    Ok(Value::Bool(true))
-                } else if self_val == 0 {
-                    Ok(Value::Bool(false))
-                } else {
-                    Err(mk_not_rep_err(self, target_type))
-                }
-            }
-            ValueType::UInt64 => {
-                let self_val: u64 = self.try_into()?;
-                if self_val == 1 {
-                    Ok(Value::Bool(true))
-                } else if self_val == 0 {
-                    Ok(Value::Bool(false))
-                } else {
-                    Err(mk_not_rep_err(self, target_type))
-                }
-            }
-            ValueType::UInt128 => {
-                let self_val: u128 = self.try_into()?;
-                if self_val == 1 {
-                    Ok(Value::Bool(true))
-                } else if self_val == 0 {
-                    Ok(Value::Bool(false))
-                } else {
-                    Err(mk_not_rep_err(self, target_type))
-                }
-            }
-            ValueType::Float32 | ValueType::Float64 => Err(mk_not_rep_err(self, target_type)),
             ValueType::Bool => Ok(self.clone()),
-            ValueType::Decimal => Err(mk_not_rep_err(self, target_type)),
-            ValueType::NaiveDate | ValueType::NaiveDateTime | ValueType::DateTime => {
-                Err(mk_not_rep_err(self, target_type))
-            }
+            _ => Err(mk_not_rep_err(self, target_type)),
         }
     }
 
@@ -6012,9 +5907,957 @@ mod tests {
         }
     }
 
-    // bool
-    // decimal
-    // naivedate
-    // naivedatetime
+    mod try_convert_to_bool {
+        use chrono::TimeZone;
+
+        use super::*;
+
+        #[test]
+        fn from_char_err_all() {
+            // Everything should fail...
+            assert!(Value::Char('y').try_convert_to_bool().is_err());
+            assert!(Value::Char('Y').try_convert_to_bool().is_err());
+            assert!(Value::Char('n').try_convert_to_bool().is_err());
+            assert!(Value::Char('N').try_convert_to_bool().is_err());
+            assert!(Value::Char('1').try_convert_to_bool().is_err());
+            assert!(Value::Char('0').try_convert_to_bool().is_err());
+            assert!(Value::Char('A').try_convert_to_bool().is_err());
+            assert!(Value::Char('%').try_convert_to_bool().is_err());
+        }
+
+        #[test]
+        fn from_string() {
+            assert_eq!(
+                Value::Bool(true),
+                Value::String(String::from("true"))
+                    .try_convert_to_bool()
+                    .unwrap()
+            );
+            assert_eq!(
+                Value::Bool(false),
+                Value::String(String::from("false"))
+                    .try_convert_to_bool()
+                    .unwrap()
+            );
+        }
+
+        #[test]
+        fn from_string_err() {
+            // ONLY lowecase is allowed!
+            assert!(Value::String(String::from("True"))
+                .try_convert_to_bool()
+                .is_err());
+            assert!(Value::String(String::from("False"))
+                .try_convert_to_bool()
+                .is_err());
+
+            assert!(Value::String(String::from("a"))
+                .try_convert_to_bool()
+                .is_err());
+            assert!(Value::String(String::from("abc"))
+                .try_convert_to_bool()
+                .is_err());
+        }
+
+        #[test]
+        fn from_uint8_err() {
+            assert!(Value::UInt8(1).try_convert_to_bool().is_err());
+            assert!(Value::UInt8(0).try_convert_to_bool().is_err());
+            assert!(Value::UInt8(u8::MIN).try_convert_to_bool().is_err());
+            assert!(Value::UInt8(u8::MAX).try_convert_to_bool().is_err());
+        }
+
+        #[test]
+        fn from_uint16_err() {
+            assert!(Value::UInt16(1).try_convert_to_bool().is_err());
+            assert!(Value::UInt16(0).try_convert_to_bool().is_err());
+            assert!(Value::UInt16(u16::MIN).try_convert_to_bool().is_err());
+            assert!(Value::UInt16(u16::MAX).try_convert_to_bool().is_err());
+        }
+
+        #[test]
+        fn from_uint32_err() {
+            assert!(Value::UInt32(1).try_convert_to_bool().is_err());
+            assert!(Value::UInt32(0).try_convert_to_bool().is_err());
+            assert!(Value::UInt32(u32::MIN).try_convert_to_bool().is_err());
+            assert!(Value::UInt32(u32::MAX).try_convert_to_bool().is_err());
+        }
+
+        #[test]
+        fn from_uint64_err() {
+            assert!(Value::UInt64(1).try_convert_to_bool().is_err());
+            assert!(Value::UInt64(0).try_convert_to_bool().is_err());
+            assert!(Value::UInt64(u64::MIN).try_convert_to_bool().is_err());
+            assert!(Value::UInt64(u64::MAX).try_convert_to_bool().is_err());
+        }
+
+        #[test]
+        fn from_uint128_err() {
+            assert!(Value::UInt128(1).try_convert_to_bool().is_err());
+            assert!(Value::UInt128(0).try_convert_to_bool().is_err());
+            assert!(Value::UInt128(u128::MIN).try_convert_to_bool().is_err());
+            assert!(Value::UInt128(u128::MAX).try_convert_to_bool().is_err());
+        }
+
+        #[test]
+        fn from_int8_err() {
+            assert!(Value::Int8(1).try_convert_to_bool().is_err());
+            assert!(Value::Int8(0).try_convert_to_bool().is_err());
+            assert!(Value::Int8(i8::MIN).try_convert_to_bool().is_err());
+            assert!(Value::Int8(i8::MAX).try_convert_to_bool().is_err());
+        }
+
+        #[test]
+        fn from_int16_err() {
+            assert!(Value::Int16(1).try_convert_to_bool().is_err());
+            assert!(Value::Int16(0).try_convert_to_bool().is_err());
+            assert!(Value::Int16(i16::MIN).try_convert_to_bool().is_err());
+            assert!(Value::Int16(i16::MAX).try_convert_to_bool().is_err());
+        }
+
+        #[test]
+        fn from_int32_err() {
+            assert!(Value::Int32(1).try_convert_to_bool().is_err());
+            assert!(Value::Int32(0).try_convert_to_bool().is_err());
+            assert!(Value::Int32(i32::MIN).try_convert_to_bool().is_err());
+            assert!(Value::Int32(i32::MAX).try_convert_to_bool().is_err());
+        }
+
+        #[test]
+        fn from_int64_err() {
+            assert!(Value::Int64(1).try_convert_to_bool().is_err());
+            assert!(Value::Int64(0).try_convert_to_bool().is_err());
+            assert!(Value::Int64(i64::MIN).try_convert_to_bool().is_err());
+            assert!(Value::Int64(i64::MAX).try_convert_to_bool().is_err());
+        }
+
+        #[test]
+        fn from_int128_err() {
+            assert!(Value::Int128(1).try_convert_to_bool().is_err());
+            assert!(Value::Int128(0).try_convert_to_bool().is_err());
+            assert!(Value::Int128(i128::MIN).try_convert_to_bool().is_err());
+            assert!(Value::Int128(i128::MAX).try_convert_to_bool().is_err());
+        }
+
+        #[test]
+        fn from_float32_err() {
+            assert!(Value::Float32(1.0).try_convert_to_bool().is_err());
+            assert!(Value::Float32(0.0).try_convert_to_bool().is_err());
+            assert!(Value::Float32(-1.0).try_convert_to_bool().is_err());
+            assert!(Value::Float32(f32::MIN).try_convert_to_bool().is_err());
+            assert!(Value::Float32(f32::MAX).try_convert_to_bool().is_err());
+        }
+
+        #[test]
+        fn from_float64_err() {
+            assert!(Value::Float64(1.0).try_convert_to_bool().is_err());
+            assert!(Value::Float64(0.0).try_convert_to_bool().is_err());
+            assert!(Value::Float64(-1.0).try_convert_to_bool().is_err());
+            assert!(Value::Float64(f64::MIN).try_convert_to_bool().is_err());
+            assert!(Value::Float64(f64::MAX).try_convert_to_bool().is_err());
+        }
+
+        #[test]
+        fn from_bool() {
+            assert_eq!(
+                Value::Bool(true),
+                Value::Bool(true).try_convert_to_bool().unwrap()
+            );
+            assert_eq!(
+                Value::Bool(false),
+                Value::Bool(false).try_convert_to_bool().unwrap()
+            );
+        }
+
+        #[test]
+        fn from_decimal_err() {
+            assert!(Value::Decimal(Decimal::new(1, 0))
+                .try_convert_to_bool()
+                .is_err());
+            assert!(Value::Decimal(Decimal::new(-1, 0))
+                .try_convert_to_bool()
+                .is_err());
+            assert!(Value::Decimal(Decimal::MIN).try_convert_to_bool().is_err());
+            assert!(Value::Decimal(Decimal::MAX).try_convert_to_bool().is_err());
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_naive_date() {
+            Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31))
+                .try_convert_to_bool()
+                .unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_naive_date_time() {
+            Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0))
+                .try_convert_to_bool()
+                .unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_date_time() {
+            Value::DateTime(
+                FixedOffset::east(2 * 3600)
+                    .ymd(2022, 12, 31)
+                    .and_hms_milli(10, 0, 0, 100),
+            )
+            .try_convert_to_bool()
+            .unwrap();
+        }
+    }
+
+    mod try_convert_to_decimal {
+        use chrono::TimeZone;
+
+        use super::*;
+
+        #[test]
+        fn from_char_err() {
+            // for now we don't do something like: '1' -> 1.0
+            assert!(Value::Char('1').try_convert_to_decimal().is_err());
+            assert!(Value::Char('a').try_convert_to_decimal().is_err());
+            assert!(Value::Char('%').try_convert_to_decimal().is_err());
+        }
+
+        #[test]
+        fn from_string() {
+            assert_eq!(
+                Value::Decimal(Decimal::new(81, 1)),
+                Value::String(String::from("8.1"))
+                    .try_convert_to_decimal()
+                    .unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_string_err_no_num() {
+            Value::String(String::from("abc"))
+                .try_convert_to_decimal()
+                .unwrap();
+        }
+
+        #[test]
+        fn from_uint8() {
+            assert_eq!(
+                Value::Decimal(Decimal::new(8, 0)),
+                Value::UInt8(8).try_convert_to_decimal().unwrap()
+            );
+            assert!(Value::UInt8(u8::MAX).try_convert_to_decimal().is_ok());
+        }
+
+        #[test]
+        fn from_uint16() {
+            assert_eq!(
+                Value::Decimal(Decimal::new(8, 0)),
+                Value::UInt16(8).try_convert_to_decimal().unwrap()
+            );
+            assert!(Value::UInt16(u16::MAX).try_convert_to_decimal().is_ok());
+        }
+
+        #[test]
+        fn from_uint32() {
+            assert_eq!(
+                Value::Decimal(Decimal::new(8, 0)),
+                Value::UInt32(8).try_convert_to_decimal().unwrap()
+            );
+            assert!(Value::UInt32(u32::MAX).try_convert_to_decimal().is_ok());
+        }
+
+        #[test]
+        fn from_uint64() {
+            assert_eq!(
+                Value::Decimal(Decimal::new(8, 0)),
+                Value::UInt64(8).try_convert_to_decimal().unwrap()
+            );
+            assert!(Value::UInt64(u64::MAX).try_convert_to_decimal().is_ok());
+        }
+
+        #[test]
+        fn from_uint128() {
+            assert_eq!(
+                Value::Decimal(Decimal::new(8, 0)),
+                Value::UInt128(8).try_convert_to_decimal().unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_uint128_err_val_too_big() {
+            Value::UInt128(u128::MAX).try_convert_to_decimal().unwrap();
+        }
+
+        #[test]
+        fn from_int8() {
+            assert_eq!(
+                Value::Decimal(Decimal::new(81, 1)),
+                Value::Float64(8.1).try_convert_to_decimal().unwrap()
+            );
+            assert!(Value::Int8(i8::MIN).try_convert_to_decimal().is_ok());
+            assert!(Value::Int8(i8::MAX).try_convert_to_decimal().is_ok());
+        }
+
+        #[test]
+        fn from_int16() {
+            assert_eq!(
+                Value::Decimal(Decimal::new(8, 0)),
+                Value::Int16(8).try_convert_to_decimal().unwrap()
+            );
+            assert!(Value::Int16(i16::MIN).try_convert_to_decimal().is_ok());
+            assert!(Value::Int16(i16::MAX).try_convert_to_decimal().is_ok());
+        }
+
+        #[test]
+        fn from_int32() {
+            assert_eq!(
+                Value::Decimal(Decimal::new(8, 0)),
+                Value::Int32(8).try_convert_to_decimal().unwrap()
+            );
+            assert!(Value::Int32(i32::MIN).try_convert_to_decimal().is_ok());
+            assert!(Value::Int32(i32::MAX).try_convert_to_decimal().is_ok());
+        }
+
+        #[test]
+        fn from_int64() {
+            assert_eq!(
+                Value::Decimal(Decimal::new(8, 0)),
+                Value::Int64(8).try_convert_to_decimal().unwrap()
+            );
+            assert!(Value::Int64(i64::MIN).try_convert_to_decimal().is_ok());
+            assert!(Value::Int64(i64::MAX).try_convert_to_decimal().is_ok());
+        }
+
+        #[test]
+        fn from_int128() {
+            assert_eq!(
+                Value::Decimal(Decimal::new(8, 0)),
+                Value::Int128(8).try_convert_to_decimal().unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_int128_err_val_too_big() {
+            Value::Int128(i128::MAX).try_convert_to_decimal().unwrap();
+        }
+
+        // TODO: errors differently
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_int128_err_val_too_small() {
+            Value::Int128(i128::MIN).try_convert_to_decimal().unwrap();
+        }
+
+        #[test]
+        fn from_float32() {
+            assert_eq!(
+                Value::Decimal(Decimal::new(8, 0)),
+                Value::Float32(8.0).try_convert_to_decimal().unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_float32_err_too_big() {
+            Value::Float32(f32::MAX).try_convert_to_decimal().unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_float32_err_too_small() {
+            Value::Float32(f32::MIN).try_convert_to_decimal().unwrap();
+        }
+
+        #[test]
+        fn from_float64() {
+            assert_eq!(
+                Value::Decimal(Decimal::new(8, 0)),
+                Value::Float64(8.0).try_convert_to_decimal().unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_float64_err_too_big() {
+            Value::Float64(f64::MAX).try_convert_to_decimal().unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_float64_err_too_small() {
+            Value::Float64(f64::MIN).try_convert_to_decimal().unwrap();
+        }
+
+        #[test]
+        fn from_bool_err() {
+            assert!(Value::Bool(true).try_convert_to_decimal().is_err());
+            assert!(Value::Bool(false).try_convert_to_decimal().is_err());
+        }
+
+        #[test]
+        fn from_decimal() {
+            assert_eq!(
+                Value::Decimal(Decimal::new(123456789, 6)),
+                Value::Decimal(Decimal::new(123456789, 6))
+                    .try_convert_to_decimal()
+                    .unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_naive_date() {
+            Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31))
+                .try_convert_to_decimal()
+                .unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_naive_date_time() {
+            Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0))
+                .try_convert_to_decimal()
+                .unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_date_time() {
+            Value::DateTime(
+                FixedOffset::east(2 * 3600)
+                    .ymd(2022, 12, 31)
+                    .and_hms_milli(10, 0, 0, 100),
+            )
+            .try_convert_to_decimal()
+            .unwrap();
+        }
+    }
+
+    mod try_convert_to_naive_date {
+        use chrono::TimeZone;
+
+        use super::*;
+
+        #[test]
+        fn from_char_err() {
+            assert!(Value::Char('1').try_convert_to_naive_date().is_err());
+            assert!(Value::Char('a').try_convert_to_naive_date().is_err());
+            assert!(Value::Char('%').try_convert_to_naive_date().is_err());
+        }
+
+        #[test]
+        fn from_string() {
+            assert_eq!(
+                Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31)),
+                Value::String(String::from("2022-12-31"))
+                    .try_convert_to_naive_date()
+                    .unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_string_err_no_date() {
+            Value::String(String::from("abc"))
+                .try_convert_to_naive_date()
+                .unwrap();
+        }
+
+        #[test]
+        fn from_uint8_err() {
+            assert!(Value::UInt8(u8::MIN).try_convert_to_naive_date().is_err());
+            assert!(Value::UInt8(u8::MAX).try_convert_to_naive_date().is_err());
+        }
+
+        #[test]
+        fn from_uint16_err() {
+            assert!(Value::UInt16(u16::MIN).try_convert_to_naive_date().is_err());
+            assert!(Value::UInt16(u16::MAX).try_convert_to_naive_date().is_err());
+        }
+
+        #[test]
+        fn from_uint32_err() {
+            assert!(Value::UInt32(u32::MIN).try_convert_to_naive_date().is_err());
+            assert!(Value::UInt32(u32::MAX).try_convert_to_naive_date().is_err());
+        }
+
+        #[test]
+        fn from_uint64_err() {
+            assert!(Value::UInt64(u64::MIN).try_convert_to_naive_date().is_err());
+            assert!(Value::UInt64(u64::MAX).try_convert_to_naive_date().is_err());
+        }
+
+        #[test]
+        fn from_uint128_err() {
+            assert!(Value::UInt128(u128::MIN)
+                .try_convert_to_naive_date()
+                .is_err());
+            assert!(Value::UInt128(u128::MAX)
+                .try_convert_to_naive_date()
+                .is_err());
+        }
+
+        #[test]
+        fn from_int8_err() {
+            assert!(Value::Int8(i8::MIN).try_convert_to_naive_date().is_err());
+            assert!(Value::Int8(i8::MAX).try_convert_to_naive_date().is_err());
+        }
+
+        #[test]
+        fn from_int16_err() {
+            assert!(Value::Int16(i16::MIN).try_convert_to_naive_date().is_err());
+            assert!(Value::Int16(i16::MAX).try_convert_to_naive_date().is_err());
+        }
+
+        #[test]
+        fn from_int32_err() {
+            assert!(Value::Int32(i32::MIN).try_convert_to_naive_date().is_err());
+            assert!(Value::Int32(i32::MAX).try_convert_to_naive_date().is_err());
+        }
+
+        #[test]
+        fn from_int64_err() {
+            assert!(Value::Int64(i64::MIN).try_convert_to_naive_date().is_err());
+            assert!(Value::Int64(i64::MAX).try_convert_to_naive_date().is_err());
+        }
+
+        #[test]
+        fn from_int128_err() {
+            assert!(Value::Int128(i128::MIN)
+                .try_convert_to_naive_date()
+                .is_err());
+            assert!(Value::Int128(i128::MAX)
+                .try_convert_to_naive_date()
+                .is_err());
+        }
+
+        #[test]
+        fn from_float32() {
+            assert!(Value::Float32(f32::MIN)
+                .try_convert_to_naive_date()
+                .is_err());
+            assert!(Value::Float32(f32::MAX)
+                .try_convert_to_naive_date()
+                .is_err());
+        }
+
+        #[test]
+        fn from_float64() {
+            assert!(Value::Float64(f64::MIN)
+                .try_convert_to_naive_date()
+                .is_err());
+            assert!(Value::Float64(f64::MAX)
+                .try_convert_to_naive_date()
+                .is_err());
+        }
+
+        #[test]
+        fn from_bool_err() {
+            assert!(Value::Bool(true).try_convert_to_naive_date().is_err());
+            assert!(Value::Bool(false).try_convert_to_naive_date().is_err());
+        }
+
+        #[test]
+        fn from_decimal_err() {
+            assert!(Value::Decimal(Decimal::new(i64::MIN, 28))
+                .try_convert_to_naive_date()
+                .is_err());
+            assert!(Value::Decimal(Decimal::new(i64::MAX, 28))
+                .try_convert_to_naive_date()
+                .is_err());
+        }
+
+        #[test]
+        fn from_naive_date() {
+            assert_eq!(
+                Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31)),
+                Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31))
+                    .try_convert_to_naive_date()
+                    .unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_naive_date_time() {
+            Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0))
+                .try_convert_to_naive_date()
+                .unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_date_time() {
+            Value::DateTime(
+                FixedOffset::east(2 * 3600)
+                    .ymd(2022, 12, 31)
+                    .and_hms_milli(10, 0, 0, 100),
+            )
+            .try_convert_to_naive_date()
+            .unwrap();
+        }
+    }
+
+    mod try_convert_to_naive_date_time {
+        use chrono::TimeZone;
+
+        use super::*;
+
+        #[test]
+        fn from_char_err() {
+            assert!(Value::Char('1').try_convert_to_naive_date_time().is_err());
+            assert!(Value::Char('a').try_convert_to_naive_date_time().is_err());
+            assert!(Value::Char('%').try_convert_to_naive_date_time().is_err());
+        }
+
+        #[test]
+        fn from_string() {
+            assert_eq!(
+                Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0)),
+                Value::String(String::from("2022-12-31 10:00:00"))
+                    .try_convert_to_naive_date_time()
+                    .unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_string_err_no_date() {
+            Value::String(String::from("abc"))
+                .try_convert_to_naive_date_time()
+                .unwrap();
+        }
+
+        #[test]
+        fn from_uint8_err() {
+            assert!(Value::UInt8(u8::MIN)
+                .try_convert_to_naive_date_time()
+                .is_err());
+            assert!(Value::UInt8(u8::MAX)
+                .try_convert_to_naive_date_time()
+                .is_err());
+        }
+
+        #[test]
+        fn from_uint16_err() {
+            assert!(Value::UInt16(u16::MIN)
+                .try_convert_to_naive_date_time()
+                .is_err());
+            assert!(Value::UInt16(u16::MAX)
+                .try_convert_to_naive_date_time()
+                .is_err());
+        }
+
+        #[test]
+        fn from_uint32_err() {
+            assert!(Value::UInt32(u32::MIN)
+                .try_convert_to_naive_date_time()
+                .is_err());
+            assert!(Value::UInt32(u32::MAX)
+                .try_convert_to_naive_date_time()
+                .is_err());
+        }
+
+        #[test]
+        fn from_uint64_err() {
+            assert!(Value::UInt64(u64::MIN)
+                .try_convert_to_naive_date_time()
+                .is_err());
+            assert!(Value::UInt64(u64::MAX)
+                .try_convert_to_naive_date_time()
+                .is_err());
+        }
+
+        #[test]
+        fn from_uint128_err() {
+            assert!(Value::UInt128(u128::MIN)
+                .try_convert_to_naive_date_time()
+                .is_err());
+            assert!(Value::UInt128(u128::MAX)
+                .try_convert_to_naive_date_time()
+                .is_err());
+        }
+
+        #[test]
+        fn from_int8_err() {
+            assert!(Value::Int8(i8::MIN)
+                .try_convert_to_naive_date_time()
+                .is_err());
+            assert!(Value::Int8(i8::MAX)
+                .try_convert_to_naive_date_time()
+                .is_err());
+        }
+
+        #[test]
+        fn from_int16_err() {
+            assert!(Value::Int16(i16::MIN)
+                .try_convert_to_naive_date_time()
+                .is_err());
+            assert!(Value::Int16(i16::MAX)
+                .try_convert_to_naive_date_time()
+                .is_err());
+        }
+
+        #[test]
+        fn from_int32_err() {
+            assert!(Value::Int32(i32::MIN)
+                .try_convert_to_naive_date_time()
+                .is_err());
+            assert!(Value::Int32(i32::MAX)
+                .try_convert_to_naive_date_time()
+                .is_err());
+        }
+
+        #[test]
+        fn from_int64_err() {
+            assert!(Value::Int64(i64::MIN)
+                .try_convert_to_naive_date_time()
+                .is_err());
+            assert!(Value::Int64(i64::MAX)
+                .try_convert_to_naive_date_time()
+                .is_err());
+        }
+
+        #[test]
+        fn from_int128_err() {
+            assert!(Value::Int128(i128::MIN)
+                .try_convert_to_naive_date_time()
+                .is_err());
+            assert!(Value::Int128(i128::MAX)
+                .try_convert_to_naive_date_time()
+                .is_err());
+        }
+
+        #[test]
+        fn from_float32() {
+            assert!(Value::Float32(f32::MIN)
+                .try_convert_to_naive_date_time()
+                .is_err());
+            assert!(Value::Float32(f32::MAX)
+                .try_convert_to_naive_date_time()
+                .is_err());
+        }
+
+        #[test]
+        fn from_float64() {
+            assert!(Value::Float64(f64::MIN)
+                .try_convert_to_naive_date_time()
+                .is_err());
+            assert!(Value::Float64(f64::MAX)
+                .try_convert_to_naive_date_time()
+                .is_err());
+        }
+
+        #[test]
+        fn from_bool_err() {
+            assert!(Value::Bool(true).try_convert_to_naive_date_time().is_err());
+            assert!(Value::Bool(false).try_convert_to_naive_date_time().is_err());
+        }
+
+        #[test]
+        fn from_decimal_err() {
+            assert!(Value::Decimal(Decimal::new(i64::MIN, 28))
+                .try_convert_to_naive_date_time()
+                .is_err());
+            assert!(Value::Decimal(Decimal::new(i64::MAX, 28))
+                .try_convert_to_naive_date_time()
+                .is_err());
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_naive_date_err() {
+            Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31))
+                .try_convert_to_naive_date_time()
+                .unwrap();
+        }
+
+        #[test]
+        fn from_naive_date_time() {
+            assert_eq!(
+                Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0)),
+                Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0))
+                    .try_convert_to_naive_date_time()
+                    .unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_date_time() {
+            Value::DateTime(
+                FixedOffset::east(2 * 3600)
+                    .ymd(2022, 12, 31)
+                    .and_hms_milli(10, 0, 0, 100),
+            )
+            .try_convert_to_naive_date_time()
+            .unwrap();
+        }
+    }
+
+    mod try_convert_to_date_time {
+        use chrono::TimeZone;
+
+        use super::*;
+
+        #[test]
+        fn from_char_err() {
+            assert!(Value::Char('1').try_convert_to_date_time().is_err());
+            assert!(Value::Char('a').try_convert_to_date_time().is_err());
+            assert!(Value::Char('%').try_convert_to_date_time().is_err());
+        }
+
+        #[test]
+        fn from_string() {
+            assert_eq!(
+                Value::DateTime(
+                    FixedOffset::east(2 * 3600)
+                        .ymd(2022, 12, 31)
+                        .and_hms_milli(10, 0, 0, 100),
+                ),
+                Value::String(String::from("2022-12-31T10:00:00.100+02:00"))
+                    .try_convert_to_date_time()
+                    .unwrap()
+            );
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_string_err_no_date() {
+            Value::String(String::from("abc"))
+                .try_convert_to_date_time()
+                .unwrap();
+        }
+
+        #[test]
+        fn from_uint8_err() {
+            assert!(Value::UInt8(u8::MIN).try_convert_to_date_time().is_err());
+            assert!(Value::UInt8(u8::MAX).try_convert_to_date_time().is_err());
+        }
+
+        #[test]
+        fn from_uint16_err() {
+            assert!(Value::UInt16(u16::MIN).try_convert_to_date_time().is_err());
+            assert!(Value::UInt16(u16::MAX).try_convert_to_date_time().is_err());
+        }
+
+        #[test]
+        fn from_uint32_err() {
+            assert!(Value::UInt32(u32::MIN).try_convert_to_date_time().is_err());
+            assert!(Value::UInt32(u32::MAX).try_convert_to_date_time().is_err());
+        }
+
+        #[test]
+        fn from_uint64_err() {
+            assert!(Value::UInt64(u64::MIN).try_convert_to_date_time().is_err());
+            assert!(Value::UInt64(u64::MAX).try_convert_to_date_time().is_err());
+        }
+
+        #[test]
+        fn from_uint128_err() {
+            assert!(Value::UInt128(u128::MIN)
+                .try_convert_to_date_time()
+                .is_err());
+            assert!(Value::UInt128(u128::MAX)
+                .try_convert_to_date_time()
+                .is_err());
+        }
+
+        #[test]
+        fn from_int8_err() {
+            assert!(Value::Int8(i8::MIN).try_convert_to_date_time().is_err());
+            assert!(Value::Int8(i8::MAX).try_convert_to_date_time().is_err());
+        }
+
+        #[test]
+        fn from_int16_err() {
+            assert!(Value::Int16(i16::MIN).try_convert_to_date_time().is_err());
+            assert!(Value::Int16(i16::MAX).try_convert_to_date_time().is_err());
+        }
+
+        #[test]
+        fn from_int32_err() {
+            assert!(Value::Int32(i32::MIN).try_convert_to_date_time().is_err());
+            assert!(Value::Int32(i32::MAX).try_convert_to_date_time().is_err());
+        }
+
+        #[test]
+        fn from_int64_err() {
+            assert!(Value::Int64(i64::MIN).try_convert_to_date_time().is_err());
+            assert!(Value::Int64(i64::MAX).try_convert_to_date_time().is_err());
+        }
+
+        #[test]
+        fn from_int128_err() {
+            assert!(Value::Int128(i128::MIN).try_convert_to_date_time().is_err());
+            assert!(Value::Int128(i128::MAX).try_convert_to_date_time().is_err());
+        }
+
+        #[test]
+        fn from_float32() {
+            assert!(Value::Float32(f32::MIN).try_convert_to_date_time().is_err());
+            assert!(Value::Float32(f32::MAX).try_convert_to_date_time().is_err());
+        }
+
+        #[test]
+        fn from_float64() {
+            assert!(Value::Float64(f64::MIN).try_convert_to_date_time().is_err());
+            assert!(Value::Float64(f64::MAX).try_convert_to_date_time().is_err());
+        }
+
+        #[test]
+        fn from_bool_err() {
+            assert!(Value::Bool(true).try_convert_to_date_time().is_err());
+            assert!(Value::Bool(false).try_convert_to_date_time().is_err());
+        }
+
+        #[test]
+        fn from_decimal_err() {
+            assert!(Value::Decimal(Decimal::new(i64::MIN, 28))
+                .try_convert_to_date_time()
+                .is_err());
+            assert!(Value::Decimal(Decimal::new(i64::MAX, 28))
+                .try_convert_to_date_time()
+                .is_err());
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_naive_date_err() {
+            Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31))
+                .try_convert_to_date_time()
+                .unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Conversion(NotRepresentableAs")]
+        fn from_naive_time_date_err() {
+            Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0))
+                .try_convert_to_date_time()
+                .unwrap();
+        }
+
+        #[test]
+        fn from_date_time() {
+            assert_eq!(
+                Value::DateTime(
+                    FixedOffset::east(2 * 3600)
+                        .ymd(2022, 12, 31)
+                        .and_hms_milli(10, 0, 0, 100),
+                ),
+                Value::DateTime(
+                    FixedOffset::east(2 * 3600)
+                        .ymd(2022, 12, 31)
+                        .and_hms_milli(10, 0, 0, 100),
+                )
+                .try_convert_to_date_time()
+                .unwrap()
+            );
+        }
+    }
     // datetime
 }
