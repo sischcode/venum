@@ -6,7 +6,7 @@
 //     clippy::cast_sign_loss
 // )]
 
-use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime};
+use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime, SecondsFormat};
 use rust_decimal::prelude::{FromPrimitive, ToPrimitive};
 use rust_decimal::Decimal;
 
@@ -15,6 +15,8 @@ use crate::value::Value;
 use crate::value_type::ValueType;
 
 const DEFAULT_RADIX_10: u32 = 10;
+const DATE_FORMAT: &str = "%Y-%m-%d";
+const DATE_TIME_FORMAT: &str = "%Y-%m-%d %H:%M:%S%.3f"; // %.3f = .%f but left-aligned but fixed to a length of 3
 
 fn mk_not_rep_err(s: &Value, tt: ValueType) -> VenumError {
     VenumError::Conversion(ConversionError::NotRepresentableAs {
@@ -225,16 +227,18 @@ impl Value {
                 Ok(Value::String(self_val.to_string()))
             }
             ValueType::NaiveDate => {
-                let self_val: NaiveDate = self.try_into()?; // TODO format
-                Ok(Value::String(self_val.to_string()))
+                let self_val: NaiveDate = self.try_into()?;
+                Ok(Value::String(self_val.format(DATE_FORMAT).to_string()))
             }
             ValueType::NaiveDateTime => {
-                let self_val: NaiveDateTime = self.try_into()?; // TODO format
-                Ok(Value::String(self_val.to_string()))
+                let self_val: NaiveDateTime = self.try_into()?;
+                Ok(Value::String(self_val.format(DATE_TIME_FORMAT).to_string()))
             }
             ValueType::DateTime => {
                 let self_val: DateTime<FixedOffset> = self.try_into()?; // TODO format
-                Ok(Value::String(self_val.to_string()))
+                Ok(Value::String(
+                    self_val.to_rfc3339_opts(SecondsFormat::Millis, false),
+                ))
             }
         }
     }
@@ -2491,7 +2495,7 @@ mod tests {
         #[test]
         fn from_naive_date_time() {
             assert_eq!(
-                Value::String(String::from("2022-12-31 10:00:00")),
+                Value::String(String::from("2022-12-31 10:00:00.000")),
                 Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0))
                     .try_convert_to_string()
                     .unwrap()
@@ -2525,7 +2529,7 @@ mod tests {
         #[test]
         fn from_date_time() {
             assert_eq!(
-                Value::String(String::from("2022-12-31 10:00:00.100 +02:00")),
+                Value::String(String::from("2022-12-31T10:00:00.100+02:00")),
                 Value::DateTime(
                     FixedOffset::east(2 * 3600)
                         .ymd(2022, 12, 31)
@@ -2539,7 +2543,7 @@ mod tests {
         #[test]
         fn from_date_time_empty_millies() {
             assert_eq!(
-                Value::String(String::from("2022-12-31 10:00:00.000 +02:00")),
+                Value::String(String::from("2022-12-31T10:00:00.000+02:00")),
                 Value::DateTime(
                     FixedOffset::east(2 * 3600)
                         .ymd(2022, 12, 31)
@@ -6518,7 +6522,21 @@ mod tests {
         fn from_string() {
             assert_eq!(
                 Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0)),
-                Value::String(String::from("2022-12-31 10:00:00"))
+                Value::String(String::from("2022-12-31T10:00:00"))
+                    .try_convert_to_naive_date_time()
+                    .unwrap()
+            );
+            assert_eq!(
+                Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0)),
+                Value::String(String::from("2022-12-31T10:00:00.000"))
+                    .try_convert_to_naive_date_time()
+                    .unwrap()
+            );
+            assert_eq!(
+                Value::NaiveDateTime(
+                    NaiveDate::from_ymd(2022, 12, 31).and_hms_milli(10, 0, 0, 100)
+                ),
+                Value::String(String::from("2022-12-31T10:00:00.100"))
                     .try_convert_to_naive_date_time()
                     .unwrap()
             );

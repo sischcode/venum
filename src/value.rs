@@ -261,13 +261,29 @@ impl Value {
         })?;
         Ok(Value::NaiveDateTime(temp))
     }
-    pub fn parse_naive_date_time_from_str_iso8601_ymdhms(v: &str) -> Result<Value> {
-        // e.g pattern "%F %T" (which is "%Y-%m-%d %H:%M:%S") to parse "2015-09-05 23:56:04"
-        // Is this really a good idea?
+    pub fn parse_naive_date_time_from_str_iso8601_ymd_hms(v: &str) -> Result<Value> {
+        // e.g for parsing "2015-09-05T23:56:04"
         if v.is_empty() {
             return Ok(Value::None);
         }
-        let chrono_pattern = "%F %T";
+        let chrono_pattern = "%Y-%m-%dT%H:%M:%S"; // same as: "%FT%T";
+        let temp = NaiveDateTime::parse_from_str(v, chrono_pattern).map_err(|oe| {
+            VenumError::Parsing(ParseError::ValueFromStringFailed {
+                src_value: String::from(v),
+                target_type: format!("{}{}", VAL_ENUM_NAME, ENUM_VAR_NDT),
+                details: Some(format!(
+                    "Chrono pattern: {chrono_pattern}. Original error: {oe}"
+                )),
+            })
+        })?;
+        Ok(Value::NaiveDateTime(temp))
+    }
+    pub fn parse_naive_date_time_from_str_iso8601_ymd_hms_millies(v: &str) -> Result<Value> {
+        // e.g for parsing "2015-09-05T23:56:04.100"
+        if v.is_empty() {
+            return Ok(Value::None);
+        }
+        let chrono_pattern = "%Y-%m-%dT%H:%M:%S%.3f";
         let temp = NaiveDateTime::parse_from_str(v, chrono_pattern).map_err(|oe| {
             VenumError::Parsing(ParseError::ValueFromStringFailed {
                 src_value: String::from(v),
@@ -280,7 +296,6 @@ impl Value {
         Ok(Value::NaiveDateTime(temp))
     }
     pub fn parse_date_time_from_str(v: &str, chrono_pattern: &str) -> Result<Value> {
-        // Is this really a good idea?
         if v.is_empty() {
             return Ok(Value::None);
         }
@@ -296,7 +311,6 @@ impl Value {
         Ok(Value::DateTime(temp))
     }
     pub fn parse_date_time_from_str_rfc2822(v: &str) -> Result<Value> {
-        // Is this really a good idea?
         if v.is_empty() {
             return Ok(Value::None);
         }
@@ -311,7 +325,6 @@ impl Value {
         Ok(Value::DateTime(temp))
     }
     pub fn parse_date_time_from_str_rfc3339(v: &str) -> Result<Value> {
-        // Is this really a good idea?
         if v.is_empty() {
             return Ok(Value::None);
         }
@@ -491,7 +504,12 @@ impl Value {
                 ValueType::Decimal => Value::parse_decimal_from_str(value),
                 ValueType::NaiveDate => Value::parse_naive_date_from_str_iso8601_ymd(value),
                 ValueType::NaiveDateTime => {
-                    Value::parse_naive_date_time_from_str_iso8601_ymdhms(value)
+                    match Value::parse_naive_date_time_from_str_iso8601_ymd_hms(value) {
+                        Ok(v) => Ok(v),
+                        Err(_) => {
+                            Value::parse_naive_date_time_from_str_iso8601_ymd_hms_millies(value)
+                        }
+                    }
                 }
                 ValueType::DateTime => Value::parse_date_time_from_str_rfc3339(value),
             }
@@ -1102,12 +1120,38 @@ mod tests {
         }
 
         #[test]
-        pub fn parse_naive_date_time_from_str_iso8601_ymdhms() {
+        pub fn parse_naive_date_time_from_str_iso8601_ymd_hms() {
             let exp = NaiveDate::from_ymd(2022, 12, 31).and_hms(12, 11, 10);
-
             assert_eq!(
                 Ok(Value::NaiveDateTime(exp)),
-                Value::parse_naive_date_time_from_str_iso8601_ymdhms("2022-12-31 12:11:10")
+                Value::parse_naive_date_time_from_str_iso8601_ymd_hms("2022-12-31T12:11:10")
+            );
+        }
+
+        #[test]
+        pub fn parse_naive_date_time_from_str_iso8601_ymd_hms_millies() {
+            let exp = NaiveDate::from_ymd(2022, 12, 31).and_hms_milli(12, 11, 10, 100);
+            assert_eq!(
+                Ok(Value::NaiveDateTime(exp)),
+                Value::parse_naive_date_time_from_str_iso8601_ymd_hms_millies(
+                    "2022-12-31T12:11:10.100"
+                )
+            );
+
+            let exp = NaiveDate::from_ymd(2022, 12, 31).and_hms_milli(12, 11, 10, 0);
+            assert_eq!(
+                Ok(Value::NaiveDateTime(exp)),
+                Value::parse_naive_date_time_from_str_iso8601_ymd_hms_millies(
+                    "2022-12-31T12:11:10.000"
+                )
+            );
+
+            let exp = NaiveDate::from_ymd(2022, 12, 31).and_hms_milli(12, 11, 10, 0);
+            assert_eq!(
+                Ok(Value::NaiveDateTime(exp)),
+                Value::parse_naive_date_time_from_str_iso8601_ymd_hms_millies(
+                    "2022-12-31T12:11:10"
+                )
             );
         }
 
@@ -1151,7 +1195,7 @@ mod tests {
         }
 
         #[test]
-        pub fn parse_date_time_from_str_rfc3339() {
+        pub fn parse_date_time_from_str_rfc3339_wo_millies() {
             let hour_secs = 3600;
             let exp: DateTime<FixedOffset> = FixedOffset::east(5 * hour_secs) // east = +; west = -
                 .ymd(2022, 12, 31)
@@ -1163,6 +1207,39 @@ mod tests {
 
             let dt = DateTime::try_from(res.unwrap()).unwrap();
             assert_eq!(dt.to_rfc3339(), String::from(date_str));
+        }
+
+        #[test]
+        pub fn parse_date_time_from_str_rfc3339_w_millies() {
+            let hour_secs = 3600;
+            let exp: DateTime<FixedOffset> = FixedOffset::east(5 * hour_secs) // east = +; west = -
+                .ymd(2022, 12, 31)
+                .and_hms_milli(6, 0, 0, 100);
+
+            let date_str = "2022-12-31T06:00:00.100+05:00";
+            let res = Value::parse_date_time_from_str_rfc3339(date_str);
+            assert_eq!(Ok(Value::DateTime(exp)), res);
+
+            let dt = DateTime::try_from(res.unwrap()).unwrap();
+            assert_eq!(dt.to_rfc3339(), String::from(date_str));
+        }
+
+        #[test]
+        pub fn parse_date_time_from_str_rfc3339_w_millies_empty() {
+            let hour_secs = 3600;
+            let exp: DateTime<FixedOffset> = FixedOffset::east(5 * hour_secs) // east = +; west = -
+                .ymd(2022, 12, 31)
+                .and_hms_milli(6, 0, 0, 0);
+
+            let date_str = "2022-12-31T06:00:00.000+05:00";
+            let res = Value::parse_date_time_from_str_rfc3339(date_str);
+            assert_eq!(Ok(Value::DateTime(exp)), res);
+
+            let dt = DateTime::try_from(res.unwrap()).unwrap();
+            assert_eq!(
+                dt.to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                String::from(date_str)
+            );
         }
 
         #[test]
