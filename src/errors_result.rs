@@ -1,6 +1,8 @@
 use strum_macros::Display;
 use thiserror::Error;
 
+use crate::{value::Value, value_type::ValueType};
+
 #[derive(Debug, PartialEq, Clone, Display)]
 pub enum VenumError {
     Generic { msg: String }, // TODO: can we get a nice error message here as well?
@@ -34,6 +36,9 @@ pub enum ConversionError {
 
     #[error("{msg:?}")]
     Generic { msg: String },
+
+    #[error("{src:?} not representable as {target_type:?}")]
+    NotRepresentableAs { src: Value, target_type: ValueType },
 
     #[error("{src_value:?} ({src_type:?}) not representable as Decimal")]
     NotRepresentableAsDecimal { src_type: String, src_value: String },
