@@ -2026,7 +2026,7 @@ impl Value {
         }
     }
 
-    pub fn try_convert_to(&self, target_type: ValueType) -> Result<Value> {
+    pub fn try_convert_to(&self, target_type: &ValueType) -> Result<Value> {
         match target_type {
             ValueType::Char => Self::try_convert_to_char(self),
             ValueType::String => Self::try_convert_to_string(self),
