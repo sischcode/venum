@@ -209,6 +209,7 @@ impl Value {
         })?;
         Ok(Value::Decimal(temp))
     }
+
     pub fn parse_naive_date_from_str(v: &str, chrono_pattern: &str) -> Result<Value> {
         // e.g pattern "%Y-%m-%d" to parse "2015-09-05"
         // Is this really a good idea?

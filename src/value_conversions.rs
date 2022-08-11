@@ -16,7 +16,7 @@ use crate::value_type::ValueType;
 
 const DEFAULT_RADIX_10: u32 = 10;
 const DATE_FORMAT: &str = "%Y-%m-%d";
-const DATE_TIME_FORMAT: &str = "%Y-%m-%d %H:%M:%S%.3f"; // %.3f = .%f but left-aligned but fixed to a length of 3
+const DATE_TIME_FORMAT: &str = "%Y-%m-%dT%H:%M:%S%.3f"; // %.3f = .%f but left-aligned but fixed to a length of 3
 
 fn mk_not_rep_err(s: &Value, tt: ValueType) -> VenumError {
     VenumError::Conversion(ConversionError::NotRepresentableAs {
@@ -2495,7 +2495,7 @@ mod tests {
         #[test]
         fn from_naive_date_time() {
             assert_eq!(
-                Value::String(String::from("2022-12-31 10:00:00.000")),
+                Value::String(String::from("2022-12-31T10:00:00.000")),
                 Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0))
                     .try_convert_to_string()
                     .unwrap()
@@ -2505,7 +2505,7 @@ mod tests {
         #[test]
         fn from_naive_date_time_with_millies() {
             assert_eq!(
-                Value::String(String::from("2022-12-31 10:00:00.100")),
+                Value::String(String::from("2022-12-31T10:00:00.100")),
                 Value::NaiveDateTime(
                     NaiveDate::from_ymd(2022, 12, 31).and_hms_milli(10, 0, 0, 100)
                 )
@@ -2517,7 +2517,7 @@ mod tests {
         #[test]
         fn from_naive_date_time_with_millies_empty() {
             assert_eq!(
-                Value::String(String::from("2022-12-31 10:00:00.000")),
+                Value::String(String::from("2022-12-31T10:00:00.000")),
                 Value::NaiveDateTime(
                     NaiveDate::from_ymd(2022, 12, 31).and_hms_milli(10, 0, 0, 000)
                 )
