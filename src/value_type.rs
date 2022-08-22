@@ -5,7 +5,7 @@ use crate::{
     value::Value,
 };
 
-#[derive(Default, Display, Debug, Clone, PartialEq, PartialOrd)]
+#[derive(Default, Display, Debug, Clone, PartialEq, Eq, PartialOrd)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum ValueType {
     Char,
