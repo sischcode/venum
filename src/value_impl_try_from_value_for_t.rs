@@ -73,6 +73,11 @@ mod tests {
             String::from("foobar"),
             String::try_from(Value::String(String::from("foobar"))).unwrap()
         );
+        assert_eq!(
+            String::new(),
+            String::try_from(Value::String(String::from(""))).unwrap()
+        );
+        assert_eq!(String::new(), String::try_from(Value::None).unwrap());
 
         assert_eq!('a', char::try_from(Value::Char('a')).unwrap());
 
