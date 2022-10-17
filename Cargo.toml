@@ -6,6 +6,7 @@ authors = ["Joerg Sischka <sischcode@gmx.net>"]
 readme = "README.md"
 repository = "https://github.com/sischcode/venum"
 keywords = ["venum", "value", "value-type", "enum", "dynamic typing", "serialization", "deserialization", "parsing"]
+categories = ["encoding", "parsing"]
 license = "Apache-2.0"
 license-file = "LICENSE"
 edition = "2021"
