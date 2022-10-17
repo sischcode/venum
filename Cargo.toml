@@ -1,11 +1,15 @@
 [package]
 name = "venum"
 version = "0.1.0"
+description = "venum is a small lib/crate that essentially just one enum type that can be used for 'dynamic typing'. It's much like serde's Value enum for example, but with lot's of functions to parse and convert between enum variants."
 authors = ["Joerg Sischka <sischcode@gmx.net>"]
 readme = "README.md"
+repository = "https://github.com/sischcode/venum"
 keywords = ["venum", "rust", "enum", "dynamic typing", "serialization", "deserialization", "parsing"]
+license = "Apache-2.0"
 edition = "2021"
 rust-version = "1.62"
+include = ["/src", "README.md", "LICENSE"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
