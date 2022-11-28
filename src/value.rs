@@ -209,6 +209,20 @@ impl Value {
         })?;
         Ok(Value::Decimal(temp))
     }
+    pub fn parse_decimal_from_str_scientific(v: &str) -> Result<Value> {
+        // Is this really a good idea?
+        if v.is_empty() {
+            return Ok(Value::None);
+        }
+        let temp = Decimal::from_scientific(v).map_err(|oe| {
+            VenumError::Parsing(ParseError::ValueFromStringFailed {
+                src_value: String::from(v),
+                target_type: format!("{}{}", VAL_ENUM_NAME, "Decimal"),
+                details: Some(format!("Original error: {oe}")),
+            })
+        })?;
+        Ok(Value::Decimal(temp))
+    }
 
     pub fn parse_naive_date_from_str(v: &str, chrono_pattern: &str) -> Result<Value> {
         // e.g pattern "%Y-%m-%d" to parse "2015-09-05"
@@ -502,7 +516,10 @@ impl Value {
                 ValueType::Float32 => Value::parse_float32_from_str(value),
                 ValueType::Float64 => Value::parse_float64_from_str(value),
                 ValueType::Bool => Value::parse_bool_from_str(value),
-                ValueType::Decimal => Value::parse_decimal_from_str(value),
+                ValueType::Decimal => match Value::parse_decimal_from_str(value) {
+                    Ok(v) => Ok(v),
+                    Err(_) => Value::parse_decimal_from_str_scientific(value),
+                },
                 ValueType::NaiveDate => Value::parse_naive_date_from_str_iso8601_ymd(value),
                 ValueType::NaiveDateTime => {
                     match Value::parse_naive_date_time_from_str_iso8601_ymd_hms(value) {
@@ -1040,6 +1057,22 @@ mod tests {
         )]
         pub fn parse_decimal_from_str_err() {
             Value::parse_decimal_from_str("foobar").unwrap();
+        }
+
+        #[test]
+        pub fn parse_decimal_from_str_scientific() {
+            assert_eq!(
+                Ok(Value::Decimal(Decimal::new(1413430, 0))),
+                Value::parse_decimal_from_str_scientific("1.41343e+006")
+            );
+        }
+
+        #[test]
+        #[should_panic(
+            expected = "Parsing(ValueFromStringFailed { src_value: \"1.41343e+00A\", target_type: \"Value::Decimal\", details: Some(\"Original error: Invalid decimal: unknown character\") })"
+        )]
+        pub fn parse_decimal_from_str_scientific_err() {
+            Value::parse_decimal_from_str("1.41343e+00A").unwrap();
         }
     }
 
