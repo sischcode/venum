@@ -37,7 +37,6 @@ impl_from_type_for_value!(DateTime, DateTime<FixedOffset>);
 mod tests {
     use super::*;
 
-    use chrono::{DateTime, FixedOffset, NaiveDate, TimeZone};
     use rust_decimal::Decimal;
 
     use crate::value::Value;
@@ -74,17 +73,31 @@ mod tests {
         );
 
         assert_eq!(
-            Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31)),
-            Value::from(NaiveDate::from_ymd(2022, 12, 31))
+            Value::NaiveDate(NaiveDate::from_ymd_opt(2022, 12, 31).unwrap()),
+            Value::from(NaiveDate::from_ymd_opt(2022, 12, 31).unwrap())
         );
         assert_eq!(
-            Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(12, 0, 0)),
-            Value::from(NaiveDate::from_ymd(2022, 12, 31).and_hms(12, 0, 0))
+            Value::NaiveDateTime(
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap()
+                    .and_hms_opt(12, 0, 0)
+                    .unwrap()
+            ),
+            Value::from(
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap()
+                    .and_hms_opt(12, 0, 0)
+                    .unwrap()
+            )
         );
 
-        let dt: DateTime<FixedOffset> = FixedOffset::east(5 * 3600) // east = +; west = -
-            .ymd(2022, 12, 31)
-            .and_hms(6, 0, 0);
-        assert_eq!(Value::DateTime(dt), Value::from(dt));
+        let d = NaiveDate::from_ymd_opt(2022, 12, 31)
+            .unwrap() // This date exists for sure. Unwrap is safe here
+            .and_hms_milli_opt(6, 0, 0, 0)
+            .unwrap() // This time exists for sure. Unwrap is safe here
+            .and_local_timezone(FixedOffset::east_opt(5 * 3600).unwrap())
+            .unwrap(); // This timezone (UTC) exists for sure. Unwrap is safe here
+
+        assert_eq!(Value::DateTime(d), Value::from(d));
     }
 }

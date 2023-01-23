@@ -2056,8 +2056,6 @@ mod tests {
     use super::*;
 
     mod try_convert_to_char {
-        use chrono::TimeZone;
-
         use super::*;
 
         #[test]
@@ -2307,7 +2305,7 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_date() {
-            Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31))
+            Value::NaiveDate(NaiveDate::from_ymd_opt(2022, 12, 31).unwrap())
                 .try_convert_to_char()
                 .unwrap();
         }
@@ -2315,26 +2313,31 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_date_time() {
-            Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0))
-                .try_convert_to_char()
-                .unwrap();
+            Value::NaiveDateTime(
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap()
+                    .and_hms_opt(10, 0, 0)
+                    .unwrap(),
+            )
+            .try_convert_to_char()
+            .unwrap();
         }
 
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_date_time() {
-            Value::DateTime(
-                FixedOffset::east(2 * 3600)
-                    .ymd(2022, 12, 31)
-                    .and_hms_milli(10, 0, 0, 100),
-            )
-            .try_convert_to_char()
-            .unwrap();
+            let d = NaiveDate::from_ymd_opt(2022, 12, 31)
+                .unwrap() // This date exists for sure. Unwrap is safe here
+                .and_hms_milli_opt(10, 0, 0, 100)
+                .unwrap() // This time exists for sure. Unwrap is safe here
+                .and_local_timezone(FixedOffset::east_opt(2 * 3600).unwrap())
+                .unwrap(); // This timezone (UTC) exists for sure. Unwrap is safe here
+
+            Value::DateTime(d).try_convert_to_char().unwrap();
         }
     }
 
     mod try_convert_to_string {
-        use chrono::TimeZone;
 
         use super::*;
 
@@ -2486,7 +2489,7 @@ mod tests {
         fn from_naive_date() {
             assert_eq!(
                 Value::String(String::from("2022-12-31")),
-                Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31))
+                Value::NaiveDate(NaiveDate::from_ymd_opt(2022, 12, 31).unwrap())
                     .try_convert_to_string()
                     .unwrap()
             );
@@ -2496,9 +2499,14 @@ mod tests {
         fn from_naive_date_time() {
             assert_eq!(
                 Value::String(String::from("2022-12-31T10:00:00.000")),
-                Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0))
-                    .try_convert_to_string()
-                    .unwrap()
+                Value::NaiveDateTime(
+                    NaiveDate::from_ymd_opt(2022, 12, 31)
+                        .unwrap()
+                        .and_hms_opt(10, 0, 0)
+                        .unwrap()
+                )
+                .try_convert_to_string()
+                .unwrap()
             );
         }
 
@@ -2507,7 +2515,10 @@ mod tests {
             assert_eq!(
                 Value::String(String::from("2022-12-31T10:00:00.100")),
                 Value::NaiveDateTime(
-                    NaiveDate::from_ymd(2022, 12, 31).and_hms_milli(10, 0, 0, 100)
+                    NaiveDate::from_ymd_opt(2022, 12, 31)
+                        .unwrap()
+                        .and_hms_milli_opt(10, 0, 0, 100)
+                        .unwrap()
                 )
                 .try_convert_to_string()
                 .unwrap()
@@ -2519,7 +2530,10 @@ mod tests {
             assert_eq!(
                 Value::String(String::from("2022-12-31T10:00:00.000")),
                 Value::NaiveDateTime(
-                    NaiveDate::from_ymd(2022, 12, 31).and_hms_milli(10, 0, 0, 000)
+                    NaiveDate::from_ymd_opt(2022, 12, 31)
+                        .unwrap()
+                        .and_hms_milli_opt(10, 0, 0, 000)
+                        .unwrap()
                 )
                 .try_convert_to_string()
                 .unwrap()
@@ -2528,35 +2542,36 @@ mod tests {
 
         #[test]
         fn from_date_time() {
+            let d = NaiveDate::from_ymd_opt(2022, 12, 31)
+                .unwrap() // This date exists for sure. Unwrap is safe here
+                .and_hms_milli_opt(10, 0, 0, 100)
+                .unwrap() // This time exists for sure. Unwrap is safe here
+                .and_local_timezone(FixedOffset::east_opt(2 * 3600).unwrap())
+                .unwrap(); // This timezone (UTC) exists for sure. Unwrap is safe here
+
             assert_eq!(
                 Value::String(String::from("2022-12-31T10:00:00.100+02:00")),
-                Value::DateTime(
-                    FixedOffset::east(2 * 3600)
-                        .ymd(2022, 12, 31)
-                        .and_hms_milli(10, 0, 0, 100)
-                )
-                .try_convert_to_string()
-                .unwrap()
+                Value::DateTime(d).try_convert_to_string().unwrap()
             );
         }
 
         #[test]
         fn from_date_time_empty_millies() {
+            let d = NaiveDate::from_ymd_opt(2022, 12, 31)
+                .unwrap() // This date exists for sure. Unwrap is safe here
+                .and_hms_milli_opt(10, 0, 0, 0)
+                .unwrap() // This time exists for sure. Unwrap is safe here
+                .and_local_timezone(FixedOffset::east_opt(2 * 3600).unwrap())
+                .unwrap(); // This timezone (UTC) exists for sure. Unwrap is safe here
+
             assert_eq!(
                 Value::String(String::from("2022-12-31T10:00:00.000+02:00")),
-                Value::DateTime(
-                    FixedOffset::east(2 * 3600)
-                        .ymd(2022, 12, 31)
-                        .and_hms_milli(10, 0, 0, 0)
-                )
-                .try_convert_to_string()
-                .unwrap()
+                Value::DateTime(d).try_convert_to_string().unwrap()
             );
         }
     }
 
     mod try_convert_to_uint8 {
-        use chrono::TimeZone;
 
         use super::*;
 
@@ -2863,7 +2878,7 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_date() {
-            Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31))
+            Value::NaiveDate(NaiveDate::from_ymd_opt(2022, 12, 31).unwrap())
                 .try_convert_to_uint8()
                 .unwrap();
         }
@@ -2871,18 +2886,26 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_date_time() {
-            Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0))
-                .try_convert_to_uint8()
-                .unwrap();
+            Value::NaiveDateTime(
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap()
+                    .and_hms_opt(10, 0, 0)
+                    .unwrap(),
+            )
+            .try_convert_to_uint8()
+            .unwrap();
         }
 
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_date_time() {
             Value::DateTime(
-                FixedOffset::east(2 * 3600)
-                    .ymd(2022, 12, 31)
-                    .and_hms_milli(10, 0, 0, 100),
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap() // This date exists for sure. Unwrap is safe here
+                    .and_hms_milli_opt(10, 0, 0, 100)
+                    .unwrap() // This time exists for sure. Unwrap is safe here
+                    .and_local_timezone(FixedOffset::east_opt(2 * 3600).unwrap())
+                    .unwrap(),
             )
             .try_convert_to_uint8()
             .unwrap();
@@ -2890,7 +2913,6 @@ mod tests {
     }
 
     mod try_convert_to_uint16 {
-        use chrono::TimeZone;
 
         use super::*;
 
@@ -3185,7 +3207,7 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_date() {
-            Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31))
+            Value::NaiveDate(NaiveDate::from_ymd_opt(2022, 12, 31).unwrap())
                 .try_convert_to_uint16()
                 .unwrap();
         }
@@ -3193,18 +3215,26 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_date_time() {
-            Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0))
-                .try_convert_to_uint16()
-                .unwrap();
+            Value::NaiveDateTime(
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap()
+                    .and_hms_opt(10, 0, 0)
+                    .unwrap(),
+            )
+            .try_convert_to_uint16()
+            .unwrap();
         }
 
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_date_time() {
             Value::DateTime(
-                FixedOffset::east(2 * 3600)
-                    .ymd(2022, 12, 31)
-                    .and_hms_milli(10, 0, 0, 100),
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap() // This date exists for sure. Unwrap is safe here
+                    .and_hms_milli_opt(10, 0, 0, 100)
+                    .unwrap() // This time exists for sure. Unwrap is safe here
+                    .and_local_timezone(FixedOffset::east_opt(2 * 3600).unwrap())
+                    .unwrap(),
             )
             .try_convert_to_uint16()
             .unwrap();
@@ -3212,7 +3242,6 @@ mod tests {
     }
 
     mod try_convert_to_uint32 {
-        use chrono::TimeZone;
 
         use super::*;
 
@@ -3495,7 +3524,7 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_date() {
-            Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31))
+            Value::NaiveDate(NaiveDate::from_ymd_opt(2022, 12, 31).unwrap())
                 .try_convert_to_uint32()
                 .unwrap();
         }
@@ -3503,18 +3532,26 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_date_time() {
-            Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0))
-                .try_convert_to_uint32()
-                .unwrap();
+            Value::NaiveDateTime(
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap()
+                    .and_hms_opt(10, 0, 0)
+                    .unwrap(),
+            )
+            .try_convert_to_uint32()
+            .unwrap();
         }
 
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_date_time() {
             Value::DateTime(
-                FixedOffset::east(2 * 3600)
-                    .ymd(2022, 12, 31)
-                    .and_hms_milli(10, 0, 0, 100),
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap() // This date exists for sure. Unwrap is safe here
+                    .and_hms_milli_opt(10, 0, 0, 100)
+                    .unwrap() // This time exists for sure. Unwrap is safe here
+                    .and_local_timezone(FixedOffset::east_opt(2 * 3600).unwrap())
+                    .unwrap(),
             )
             .try_convert_to_uint32()
             .unwrap();
@@ -3522,7 +3559,6 @@ mod tests {
     }
 
     mod try_convert_to_uint64 {
-        use chrono::TimeZone;
 
         use super::*;
 
@@ -3777,7 +3813,7 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_date() {
-            Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31))
+            Value::NaiveDate(NaiveDate::from_ymd_opt(2022, 12, 31).unwrap())
                 .try_convert_to_uint64()
                 .unwrap();
         }
@@ -3785,18 +3821,26 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_date_time() {
-            Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0))
-                .try_convert_to_uint64()
-                .unwrap();
+            Value::NaiveDateTime(
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap()
+                    .and_hms_opt(10, 0, 0)
+                    .unwrap(),
+            )
+            .try_convert_to_uint64()
+            .unwrap();
         }
 
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_date_time() {
             Value::DateTime(
-                FixedOffset::east(2 * 3600)
-                    .ymd(2022, 12, 31)
-                    .and_hms_milli(10, 0, 0, 100),
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap() // This date exists for sure. Unwrap is safe here
+                    .and_hms_milli_opt(10, 0, 0, 100)
+                    .unwrap() // This time exists for sure. Unwrap is safe here
+                    .and_local_timezone(FixedOffset::east_opt(2 * 3600).unwrap())
+                    .unwrap(),
             )
             .try_convert_to_uint64()
             .unwrap();
@@ -3804,7 +3848,6 @@ mod tests {
     }
 
     mod try_convert_to_uint128 {
-        use chrono::TimeZone;
 
         use super::*;
 
@@ -4047,7 +4090,7 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_date() {
-            Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31))
+            Value::NaiveDate(NaiveDate::from_ymd_opt(2022, 12, 31).unwrap())
                 .try_convert_to_uint128()
                 .unwrap();
         }
@@ -4055,18 +4098,26 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_date_time() {
-            Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0))
-                .try_convert_to_uint128()
-                .unwrap();
+            Value::NaiveDateTime(
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap()
+                    .and_hms_opt(10, 0, 0)
+                    .unwrap(),
+            )
+            .try_convert_to_uint128()
+            .unwrap();
         }
 
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_date_time() {
             Value::DateTime(
-                FixedOffset::east(2 * 3600)
-                    .ymd(2022, 12, 31)
-                    .and_hms_milli(10, 0, 0, 100),
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap() // This date exists for sure. Unwrap is safe here
+                    .and_hms_milli_opt(10, 0, 0, 100)
+                    .unwrap() // This time exists for sure. Unwrap is safe here
+                    .and_local_timezone(FixedOffset::east_opt(2 * 3600).unwrap())
+                    .unwrap(),
             )
             .try_convert_to_uint128()
             .unwrap();
@@ -4074,7 +4125,6 @@ mod tests {
     }
 
     mod try_convert_to_int8 {
-        use chrono::TimeZone;
 
         use super::*;
 
@@ -4371,7 +4421,7 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_date() {
-            Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31))
+            Value::NaiveDate(NaiveDate::from_ymd_opt(2022, 12, 31).unwrap())
                 .try_convert_to_int8()
                 .unwrap();
         }
@@ -4379,18 +4429,26 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_date_time() {
-            Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0))
-                .try_convert_to_int8()
-                .unwrap();
+            Value::NaiveDateTime(
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap()
+                    .and_hms_opt(10, 0, 0)
+                    .unwrap(),
+            )
+            .try_convert_to_int8()
+            .unwrap();
         }
 
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_date_time() {
             Value::DateTime(
-                FixedOffset::east(2 * 3600)
-                    .ymd(2022, 12, 31)
-                    .and_hms_milli(10, 0, 0, 100),
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap() // This date exists for sure. Unwrap is safe here
+                    .and_hms_milli_opt(10, 0, 0, 100)
+                    .unwrap() // This time exists for sure. Unwrap is safe here
+                    .and_local_timezone(FixedOffset::east_opt(2 * 3600).unwrap())
+                    .unwrap(),
             )
             .try_convert_to_int8()
             .unwrap();
@@ -4398,7 +4456,6 @@ mod tests {
     }
 
     mod try_convert_to_int16 {
-        use chrono::TimeZone;
 
         use super::*;
 
@@ -4677,7 +4734,7 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_date() {
-            Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31))
+            Value::NaiveDate(NaiveDate::from_ymd_opt(2022, 12, 31).unwrap())
                 .try_convert_to_int16()
                 .unwrap();
         }
@@ -4685,18 +4742,26 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_date_time() {
-            Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0))
-                .try_convert_to_int16()
-                .unwrap();
+            Value::NaiveDateTime(
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap()
+                    .and_hms_opt(10, 0, 0)
+                    .unwrap(),
+            )
+            .try_convert_to_int16()
+            .unwrap();
         }
 
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_date_time() {
             Value::DateTime(
-                FixedOffset::east(2 * 3600)
-                    .ymd(2022, 12, 31)
-                    .and_hms_milli(10, 0, 0, 100),
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap() // This date exists for sure. Unwrap is safe here
+                    .and_hms_milli_opt(10, 0, 0, 100)
+                    .unwrap() // This time exists for sure. Unwrap is safe here
+                    .and_local_timezone(FixedOffset::east_opt(2 * 3600).unwrap())
+                    .unwrap(),
             )
             .try_convert_to_int16()
             .unwrap();
@@ -4704,7 +4769,6 @@ mod tests {
     }
 
     mod try_convert_to_int32 {
-        use chrono::TimeZone;
 
         use super::*;
 
@@ -4965,7 +5029,7 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_date() {
-            Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31))
+            Value::NaiveDate(NaiveDate::from_ymd_opt(2022, 12, 31).unwrap())
                 .try_convert_to_int32()
                 .unwrap();
         }
@@ -4973,18 +5037,26 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_date_time() {
-            Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0))
-                .try_convert_to_int32()
-                .unwrap();
+            Value::NaiveDateTime(
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap()
+                    .and_hms_opt(10, 0, 0)
+                    .unwrap(),
+            )
+            .try_convert_to_int32()
+            .unwrap();
         }
 
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_date_time() {
             Value::DateTime(
-                FixedOffset::east(2 * 3600)
-                    .ymd(2022, 12, 31)
-                    .and_hms_milli(10, 0, 0, 100),
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap() // This date exists for sure. Unwrap is safe here
+                    .and_hms_milli_opt(10, 0, 0, 100)
+                    .unwrap() // This time exists for sure. Unwrap is safe here
+                    .and_local_timezone(FixedOffset::east_opt(2 * 3600).unwrap())
+                    .unwrap(),
             )
             .try_convert_to_int32()
             .unwrap();
@@ -4992,7 +5064,6 @@ mod tests {
     }
 
     mod try_convert_to_int64 {
-        use chrono::TimeZone;
 
         use super::*;
 
@@ -5221,7 +5292,7 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_date() {
-            Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31))
+            Value::NaiveDate(NaiveDate::from_ymd_opt(2022, 12, 31).unwrap())
                 .try_convert_to_int64()
                 .unwrap();
         }
@@ -5229,18 +5300,26 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_date_time() {
-            Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0))
-                .try_convert_to_int64()
-                .unwrap();
+            Value::NaiveDateTime(
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap()
+                    .and_hms_opt(10, 0, 0)
+                    .unwrap(),
+            )
+            .try_convert_to_int64()
+            .unwrap();
         }
 
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_date_time() {
             Value::DateTime(
-                FixedOffset::east(2 * 3600)
-                    .ymd(2022, 12, 31)
-                    .and_hms_milli(10, 0, 0, 100),
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap() // This date exists for sure. Unwrap is safe here
+                    .and_hms_milli_opt(10, 0, 0, 100)
+                    .unwrap() // This time exists for sure. Unwrap is safe here
+                    .and_local_timezone(FixedOffset::east_opt(2 * 3600).unwrap())
+                    .unwrap(),
             )
             .try_convert_to_int64()
             .unwrap();
@@ -5248,7 +5327,6 @@ mod tests {
     }
 
     mod try_convert_to_int128 {
-        use chrono::TimeZone;
 
         use super::*;
 
@@ -5461,7 +5539,7 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_date() {
-            Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31))
+            Value::NaiveDate(NaiveDate::from_ymd_opt(2022, 12, 31).unwrap())
                 .try_convert_to_int128()
                 .unwrap();
         }
@@ -5469,18 +5547,26 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_date_time() {
-            Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0))
-                .try_convert_to_int128()
-                .unwrap();
+            Value::NaiveDateTime(
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap()
+                    .and_hms_opt(10, 0, 0)
+                    .unwrap(),
+            )
+            .try_convert_to_int128()
+            .unwrap();
         }
 
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_date_time() {
             Value::DateTime(
-                FixedOffset::east(2 * 3600)
-                    .ymd(2022, 12, 31)
-                    .and_hms_milli(10, 0, 0, 100),
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap() // This date exists for sure. Unwrap is safe here
+                    .and_hms_milli_opt(10, 0, 0, 100)
+                    .unwrap() // This time exists for sure. Unwrap is safe here
+                    .and_local_timezone(FixedOffset::east_opt(2 * 3600).unwrap())
+                    .unwrap(),
             )
             .try_convert_to_int128()
             .unwrap();
@@ -5488,7 +5574,6 @@ mod tests {
     }
 
     mod try_convert_to_float32 {
-        use chrono::TimeZone;
 
         use super::*;
 
@@ -5683,7 +5768,7 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_date() {
-            Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31))
+            Value::NaiveDate(NaiveDate::from_ymd_opt(2022, 12, 31).unwrap())
                 .try_convert_to_float32()
                 .unwrap();
         }
@@ -5691,18 +5776,26 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_date_time() {
-            Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0))
-                .try_convert_to_float32()
-                .unwrap();
+            Value::NaiveDateTime(
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap()
+                    .and_hms_opt(10, 0, 0)
+                    .unwrap(),
+            )
+            .try_convert_to_float32()
+            .unwrap();
         }
 
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_date_time() {
             Value::DateTime(
-                FixedOffset::east(2 * 3600)
-                    .ymd(2022, 12, 31)
-                    .and_hms_milli(10, 0, 0, 100),
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap() // This date exists for sure. Unwrap is safe here
+                    .and_hms_milli_opt(10, 0, 0, 100)
+                    .unwrap() // This time exists for sure. Unwrap is safe here
+                    .and_local_timezone(FixedOffset::east_opt(2 * 3600).unwrap())
+                    .unwrap(),
             )
             .try_convert_to_float32()
             .unwrap();
@@ -5710,7 +5803,6 @@ mod tests {
     }
 
     mod try_convert_to_float64 {
-        use chrono::TimeZone;
 
         use super::*;
 
@@ -5885,7 +5977,7 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_date() {
-            Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31))
+            Value::NaiveDate(NaiveDate::from_ymd_opt(2022, 12, 31).unwrap())
                 .try_convert_to_float64()
                 .unwrap();
         }
@@ -5893,18 +5985,26 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_date_time() {
-            Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0))
-                .try_convert_to_float64()
-                .unwrap();
+            Value::NaiveDateTime(
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap()
+                    .and_hms_opt(10, 0, 0)
+                    .unwrap(),
+            )
+            .try_convert_to_float64()
+            .unwrap();
         }
 
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_date_time() {
             Value::DateTime(
-                FixedOffset::east(2 * 3600)
-                    .ymd(2022, 12, 31)
-                    .and_hms_milli(10, 0, 0, 100),
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap() // This date exists for sure. Unwrap is safe here
+                    .and_hms_milli_opt(10, 0, 0, 100)
+                    .unwrap() // This time exists for sure. Unwrap is safe here
+                    .and_local_timezone(FixedOffset::east_opt(2 * 3600).unwrap())
+                    .unwrap(),
             )
             .try_convert_to_float64()
             .unwrap();
@@ -5912,7 +6012,6 @@ mod tests {
     }
 
     mod try_convert_to_bool {
-        use chrono::TimeZone;
 
         use super::*;
 
@@ -6088,7 +6187,7 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_date() {
-            Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31))
+            Value::NaiveDate(NaiveDate::from_ymd_opt(2022, 12, 31).unwrap())
                 .try_convert_to_bool()
                 .unwrap();
         }
@@ -6096,18 +6195,26 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_date_time() {
-            Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0))
-                .try_convert_to_bool()
-                .unwrap();
+            Value::NaiveDateTime(
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap()
+                    .and_hms_opt(10, 0, 0)
+                    .unwrap(),
+            )
+            .try_convert_to_bool()
+            .unwrap();
         }
 
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_date_time() {
             Value::DateTime(
-                FixedOffset::east(2 * 3600)
-                    .ymd(2022, 12, 31)
-                    .and_hms_milli(10, 0, 0, 100),
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap() // This date exists for sure. Unwrap is safe here
+                    .and_hms_milli_opt(10, 0, 0, 100)
+                    .unwrap() // This time exists for sure. Unwrap is safe here
+                    .and_local_timezone(FixedOffset::east_opt(2 * 3600).unwrap())
+                    .unwrap(),
             )
             .try_convert_to_bool()
             .unwrap();
@@ -6115,7 +6222,6 @@ mod tests {
     }
 
     mod try_convert_to_decimal {
-        use chrono::TimeZone;
 
         use super::*;
 
@@ -6315,7 +6421,7 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_date() {
-            Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31))
+            Value::NaiveDate(NaiveDate::from_ymd_opt(2022, 12, 31).unwrap())
                 .try_convert_to_decimal()
                 .unwrap();
         }
@@ -6323,18 +6429,26 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_date_time() {
-            Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0))
-                .try_convert_to_decimal()
-                .unwrap();
+            Value::NaiveDateTime(
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap()
+                    .and_hms_opt(10, 0, 0)
+                    .unwrap(),
+            )
+            .try_convert_to_decimal()
+            .unwrap();
         }
 
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_date_time() {
             Value::DateTime(
-                FixedOffset::east(2 * 3600)
-                    .ymd(2022, 12, 31)
-                    .and_hms_milli(10, 0, 0, 100),
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap() // This date exists for sure. Unwrap is safe here
+                    .and_hms_milli_opt(10, 0, 0, 100)
+                    .unwrap() // This time exists for sure. Unwrap is safe here
+                    .and_local_timezone(FixedOffset::east_opt(2 * 3600).unwrap())
+                    .unwrap(),
             )
             .try_convert_to_decimal()
             .unwrap();
@@ -6342,7 +6456,6 @@ mod tests {
     }
 
     mod try_convert_to_naive_date {
-        use chrono::TimeZone;
 
         use super::*;
 
@@ -6356,7 +6469,7 @@ mod tests {
         #[test]
         fn from_string() {
             assert_eq!(
-                Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31)),
+                Value::NaiveDate(NaiveDate::from_ymd_opt(2022, 12, 31).unwrap()),
                 Value::String(String::from("2022-12-31"))
                     .try_convert_to_naive_date()
                     .unwrap()
@@ -6478,8 +6591,8 @@ mod tests {
         #[test]
         fn from_naive_date() {
             assert_eq!(
-                Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31)),
-                Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31))
+                Value::NaiveDate(NaiveDate::from_ymd_opt(2022, 12, 31).unwrap()),
+                Value::NaiveDate(NaiveDate::from_ymd_opt(2022, 12, 31).unwrap())
                     .try_convert_to_naive_date()
                     .unwrap()
             );
@@ -6488,18 +6601,26 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_date_time() {
-            Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0))
-                .try_convert_to_naive_date()
-                .unwrap();
+            Value::NaiveDateTime(
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap()
+                    .and_hms_opt(10, 0, 0)
+                    .unwrap(),
+            )
+            .try_convert_to_naive_date()
+            .unwrap();
         }
 
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_date_time() {
             Value::DateTime(
-                FixedOffset::east(2 * 3600)
-                    .ymd(2022, 12, 31)
-                    .and_hms_milli(10, 0, 0, 100),
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap() // This date exists for sure. Unwrap is safe here
+                    .and_hms_milli_opt(10, 0, 0, 100)
+                    .unwrap() // This time exists for sure. Unwrap is safe here
+                    .and_local_timezone(FixedOffset::east_opt(2 * 3600).unwrap())
+                    .unwrap(),
             )
             .try_convert_to_naive_date()
             .unwrap();
@@ -6507,7 +6628,6 @@ mod tests {
     }
 
     mod try_convert_to_naive_date_time {
-        use chrono::TimeZone;
 
         use super::*;
 
@@ -6521,20 +6641,33 @@ mod tests {
         #[test]
         fn from_string() {
             assert_eq!(
-                Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0)),
+                Value::NaiveDateTime(
+                    NaiveDate::from_ymd_opt(2022, 12, 31)
+                        .unwrap()
+                        .and_hms_opt(10, 0, 0)
+                        .unwrap()
+                ),
                 Value::String(String::from("2022-12-31T10:00:00"))
                     .try_convert_to_naive_date_time()
                     .unwrap()
             );
             assert_eq!(
-                Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0)),
+                Value::NaiveDateTime(
+                    NaiveDate::from_ymd_opt(2022, 12, 31)
+                        .unwrap()
+                        .and_hms_opt(10, 0, 0)
+                        .unwrap()
+                ),
                 Value::String(String::from("2022-12-31T10:00:00.000"))
                     .try_convert_to_naive_date_time()
                     .unwrap()
             );
             assert_eq!(
                 Value::NaiveDateTime(
-                    NaiveDate::from_ymd(2022, 12, 31).and_hms_milli(10, 0, 0, 100)
+                    NaiveDate::from_ymd_opt(2022, 12, 31)
+                        .unwrap()
+                        .and_hms_milli_opt(10, 0, 0, 100)
+                        .unwrap()
                 ),
                 Value::String(String::from("2022-12-31T10:00:00.100"))
                     .try_convert_to_naive_date_time()
@@ -6689,7 +6822,7 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_date_err() {
-            Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31))
+            Value::NaiveDate(NaiveDate::from_ymd_opt(2022, 12, 31).unwrap())
                 .try_convert_to_naive_date_time()
                 .unwrap();
         }
@@ -6697,10 +6830,20 @@ mod tests {
         #[test]
         fn from_naive_date_time() {
             assert_eq!(
-                Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0)),
-                Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0))
-                    .try_convert_to_naive_date_time()
-                    .unwrap()
+                Value::NaiveDateTime(
+                    NaiveDate::from_ymd_opt(2022, 12, 31)
+                        .unwrap()
+                        .and_hms_opt(10, 0, 0)
+                        .unwrap()
+                ),
+                Value::NaiveDateTime(
+                    NaiveDate::from_ymd_opt(2022, 12, 31)
+                        .unwrap()
+                        .and_hms_opt(10, 0, 0)
+                        .unwrap()
+                )
+                .try_convert_to_naive_date_time()
+                .unwrap()
             );
         }
 
@@ -6708,9 +6851,12 @@ mod tests {
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_date_time() {
             Value::DateTime(
-                FixedOffset::east(2 * 3600)
-                    .ymd(2022, 12, 31)
-                    .and_hms_milli(10, 0, 0, 100),
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap() // This date exists for sure. Unwrap is safe here
+                    .and_hms_milli_opt(10, 0, 0, 100)
+                    .unwrap() // This time exists for sure. Unwrap is safe here
+                    .and_local_timezone(FixedOffset::east_opt(2 * 3600).unwrap())
+                    .unwrap(),
             )
             .try_convert_to_naive_date_time()
             .unwrap();
@@ -6718,7 +6864,6 @@ mod tests {
     }
 
     mod try_convert_to_date_time {
-        use chrono::TimeZone;
 
         use super::*;
 
@@ -6733,9 +6878,12 @@ mod tests {
         fn from_string() {
             assert_eq!(
                 Value::DateTime(
-                    FixedOffset::east(2 * 3600)
-                        .ymd(2022, 12, 31)
-                        .and_hms_milli(10, 0, 0, 100),
+                    NaiveDate::from_ymd_opt(2022, 12, 31)
+                        .unwrap() // This date exists for sure. Unwrap is safe here
+                        .and_hms_milli_opt(10, 0, 0, 100)
+                        .unwrap() // This time exists for sure. Unwrap is safe here
+                        .and_local_timezone(FixedOffset::east_opt(2 * 3600).unwrap())
+                        .unwrap(),
                 ),
                 Value::String(String::from("2022-12-31T10:00:00.100+02:00"))
                     .try_convert_to_date_time()
@@ -6846,7 +6994,7 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_date_err() {
-            Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31))
+            Value::NaiveDate(NaiveDate::from_ymd_opt(2022, 12, 31).unwrap())
                 .try_convert_to_date_time()
                 .unwrap();
         }
@@ -6854,23 +7002,34 @@ mod tests {
         #[test]
         #[should_panic(expected = "Conversion(NotRepresentableAs")]
         fn from_naive_time_date_err() {
-            Value::NaiveDateTime(NaiveDate::from_ymd(2022, 12, 31).and_hms(10, 0, 0))
-                .try_convert_to_date_time()
-                .unwrap();
+            Value::NaiveDateTime(
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap()
+                    .and_hms_opt(10, 0, 0)
+                    .unwrap(),
+            )
+            .try_convert_to_date_time()
+            .unwrap();
         }
 
         #[test]
         fn from_date_time() {
             assert_eq!(
                 Value::DateTime(
-                    FixedOffset::east(2 * 3600)
-                        .ymd(2022, 12, 31)
-                        .and_hms_milli(10, 0, 0, 100),
+                    NaiveDate::from_ymd_opt(2022, 12, 31)
+                        .unwrap() // This date exists for sure. Unwrap is safe here
+                        .and_hms_milli_opt(10, 0, 0, 100)
+                        .unwrap() // This time exists for sure. Unwrap is safe here
+                        .and_local_timezone(FixedOffset::east_opt(2 * 3600).unwrap())
+                        .unwrap(),
                 ),
                 Value::DateTime(
-                    FixedOffset::east(2 * 3600)
-                        .ymd(2022, 12, 31)
-                        .and_hms_milli(10, 0, 0, 100),
+                    NaiveDate::from_ymd_opt(2022, 12, 31)
+                        .unwrap() // This date exists for sure. Unwrap is safe here
+                        .and_hms_milli_opt(10, 0, 0, 100)
+                        .unwrap() // This time exists for sure. Unwrap is safe here
+                        .and_local_timezone(FixedOffset::east_opt(2 * 3600).unwrap())
+                        .unwrap(),
                 )
                 .try_convert_to_date_time()
                 .unwrap()

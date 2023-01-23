@@ -1,7 +1,7 @@
 use std::convert::From;
 use std::str::FromStr;
 
-use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime, TimeZone};
+use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime};
 use rust_decimal::{prelude::FromPrimitive, Decimal};
 use strum_macros::Display; // used to generate names for the enum variants. Used only for error messages (as of now).
 
@@ -101,21 +101,28 @@ impl Value {
 
     /// Default is: 1970-01-01
     pub fn naive_date_default() -> Value {
-        Value::NaiveDate(NaiveDate::from_ymd(1970, 1, 1))
+        Value::NaiveDate(NaiveDate::from_ymd_opt(1970, 1, 1).unwrap()) // This date exists for sure. Unwrap is safe here
     }
 
     /// Default is: 1970-01-01 00:00:00
     pub fn naive_date_time_default() -> Value {
-        Value::NaiveDateTime(NaiveDate::from_ymd(1970, 1, 1).and_hms(0, 0, 0))
+        Value::NaiveDateTime(
+            NaiveDate::from_ymd_opt(1970, 1, 1)
+                .unwrap() // This date exists for sure. Unwrap is safe here
+                .and_hms_opt(0, 0, 0)
+                .unwrap(), // This time exists for sure. Unwrap is safe here
+        )
     }
 
     /// Default is: 1970-01-01 00:00:00 +00:00 (formatted as: 1970-01-01T00:00:00+00:00)
     pub fn date_time_default() -> Value {
-        Value::DateTime(
-            FixedOffset::east(0) // east = +; west = -
-                .ymd(1970, 1, 1)
-                .and_hms_milli(0, 0, 0, 0),
-        )
+        let d = NaiveDate::from_ymd_opt(1970, 1, 1)
+            .unwrap() // This date exists for sure. Unwrap is safe here
+            .and_hms_milli_opt(0, 0, 0, 0)
+            .unwrap() // This time exists for sure. Unwrap is safe here
+            .and_local_timezone(FixedOffset::east_opt(0).unwrap())
+            .unwrap(); // This timezone (UTC) exists for sure. Unwrap is safe here
+        Value::DateTime(d)
     }
 
     from_type_string!(parse_char_from_str, Char, char);
@@ -610,431 +617,523 @@ mod tests {
     mod parse_from_str {
         use super::*;
 
-        #[test]
-        pub fn parse_int8_from_str() {
-            assert_eq!(
-                Ok(Value::Int8(i8::MAX)),
-                Value::parse_int8_from_str(&i8::MAX.to_string())
-            );
-            assert_eq!(
-                Ok(Value::Int8(i8::MIN)),
-                Value::parse_int8_from_str(&i8::MIN.to_string())
-            );
+        mod int8 {
+            use super::*;
+
+            #[test]
+            pub fn parse_int8_from_str() {
+                assert_eq!(
+                    Ok(Value::Int8(i8::MAX)),
+                    Value::parse_int8_from_str(&i8::MAX.to_string())
+                );
+                assert_eq!(
+                    Ok(Value::Int8(i8::MIN)),
+                    Value::parse_int8_from_str(&i8::MIN.to_string())
+                );
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_int8_from_str_err_val_too_big() {
+                Value::parse_int8_from_str(&i16::MAX.to_string()).unwrap();
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_int8_from_str_err_val_too_small() {
+                Value::parse_int8_from_str(&i16::MIN.to_string()).unwrap();
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_int8_from_str_err_not_an_int8() {
+                Value::parse_int8_from_str("not-an-int8").unwrap();
+            }
         }
 
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_int8_from_str_err_val_too_big() {
-            Value::parse_int8_from_str(&i16::MAX.to_string()).unwrap();
+        mod int16 {
+            use super::*;
+
+            #[test]
+            pub fn parse_int16_from_str() {
+                assert_eq!(
+                    Ok(Value::Int16(i16::MAX)),
+                    Value::parse_int16_from_str(&i16::MAX.to_string())
+                );
+                assert_eq!(
+                    Ok(Value::Int16(i16::MIN)),
+                    Value::parse_int16_from_str(&i16::MIN.to_string())
+                );
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_int16_from_str_err_val_too_big() {
+                Value::parse_int16_from_str(&i32::MAX.to_string()).unwrap();
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_int16_from_str_err_val_too_small() {
+                Value::parse_int16_from_str(&i32::MIN.to_string()).unwrap();
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_int16_from_str_err_not_an_int16() {
+                Value::parse_int16_from_str("not-an-int16").unwrap();
+            }
         }
 
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_int8_from_str_err_val_too_small() {
-            Value::parse_int8_from_str(&i16::MIN.to_string()).unwrap();
+        mod int32 {
+            use super::*;
+
+            #[test]
+            pub fn parse_int32_from_str() {
+                assert_eq!(
+                    Ok(Value::Int32(i32::MAX)),
+                    Value::parse_int32_from_str(&i32::MAX.to_string())
+                );
+                assert_eq!(
+                    Ok(Value::Int32(i32::MIN)),
+                    Value::parse_int32_from_str(&i32::MIN.to_string())
+                );
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_int32_from_str_err_val_too_big() {
+                Value::parse_int32_from_str(&i64::MAX.to_string()).unwrap();
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_int32_from_str_err_val_too_small() {
+                Value::parse_int32_from_str(&i64::MIN.to_string()).unwrap();
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_int32_from_str_err_not_an_int32() {
+                Value::parse_int32_from_str("not-an-int32").unwrap();
+            }
         }
 
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_int8_from_str_err_not_an_int8() {
-            Value::parse_int8_from_str("not-an-int8").unwrap();
+        mod int64 {
+            use super::*;
+
+            #[test]
+            pub fn parse_int64_from_str() {
+                assert_eq!(
+                    Ok(Value::Int64(i64::MAX)),
+                    Value::parse_int64_from_str(&i64::MAX.to_string())
+                );
+                assert_eq!(
+                    Ok(Value::Int64(i64::MIN)),
+                    Value::parse_int64_from_str(&i64::MIN.to_string())
+                );
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_int64_from_str_err_val_too_big() {
+                Value::parse_int64_from_str(&i128::MAX.to_string()).unwrap();
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_int64_from_str_err_val_too_small() {
+                Value::parse_int64_from_str(&i128::MIN.to_string()).unwrap();
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_int64_from_str_err_not_an_int64() {
+                Value::parse_int64_from_str("not-an-int64").unwrap();
+            }
         }
 
-        #[test]
-        pub fn parse_int16_from_str() {
-            assert_eq!(
-                Ok(Value::Int16(i16::MAX)),
-                Value::parse_int16_from_str(&i16::MAX.to_string())
-            );
-            assert_eq!(
-                Ok(Value::Int16(i16::MIN)),
-                Value::parse_int16_from_str(&i16::MIN.to_string())
-            );
+        mod int128 {
+            use super::*;
+
+            #[test]
+            pub fn parse_int128_from_str() {
+                assert_eq!(
+                    Ok(Value::Int128(i128::MAX)),
+                    Value::parse_int128_from_str(&i128::MAX.to_string())
+                );
+                assert_eq!(
+                    Ok(Value::Int128(i128::MIN)),
+                    Value::parse_int128_from_str(&i128::MIN.to_string())
+                );
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_int128_from_str_err_val_too_big() {
+                // max is: 170141183460469231731687303715884105727
+                Value::parse_int128_from_str("170141183460469231731687303715884105728").unwrap();
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_int128_from_str_err_val_too_small() {
+                // min is: -170141183460469231731687303715884105728
+                Value::parse_int128_from_str("-170141183460469231731687303715884105729").unwrap();
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_int128_from_str_err_not_an_int128() {
+                Value::parse_int128_from_str("not-an-int128").unwrap();
+            }
         }
 
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_int16_from_str_err_val_too_big() {
-            Value::parse_int16_from_str(&i32::MAX.to_string()).unwrap();
+        mod uint8 {
+            use super::*;
+
+            #[test]
+            pub fn parse_uint8_from_str() {
+                assert_eq!(
+                    Ok(Value::UInt8(u8::MAX)),
+                    Value::parse_uint8_from_str(&u8::MAX.to_string())
+                );
+                assert_eq!(
+                    Ok(Value::UInt8(u8::MIN)),
+                    Value::parse_uint8_from_str(&u8::MIN.to_string())
+                );
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_uint8_from_str_err_val_too_big() {
+                Value::parse_uint8_from_str(&u16::MAX.to_string()).unwrap();
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_uint8_from_str_err_val_too_small() {
+                Value::parse_uint8_from_str("-1").unwrap();
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_uint8_from_str_err_not_an_uint8() {
+                Value::parse_uint8_from_str("not-an-uint8").unwrap();
+            }
         }
 
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_int16_from_str_err_val_too_small() {
-            Value::parse_int16_from_str(&i32::MIN.to_string()).unwrap();
+        mod uint16 {
+            use super::*;
+
+            #[test]
+            pub fn parse_uint16_from_str() {
+                assert_eq!(
+                    Ok(Value::UInt16(u16::MAX)),
+                    Value::parse_uint16_from_str(&u16::MAX.to_string())
+                );
+                assert_eq!(
+                    Ok(Value::UInt16(u16::MIN)),
+                    Value::parse_uint16_from_str(&u16::MIN.to_string())
+                );
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_uint16_from_str_err_val_too_big() {
+                Value::parse_uint16_from_str(&u32::MAX.to_string()).unwrap();
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_uint16_from_str_err_val_too_small() {
+                Value::parse_uint16_from_str("-1").unwrap();
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_uint16_from_str_err_not_an_uint16() {
+                Value::parse_uint16_from_str("not-an-uint16").unwrap();
+            }
         }
 
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_int16_from_str_err_not_an_int16() {
-            Value::parse_int16_from_str("not-an-int16").unwrap();
+        mod uint32 {
+            use super::*;
+
+            #[test]
+            pub fn parse_uint32_from_str() {
+                assert_eq!(
+                    Ok(Value::UInt32(u32::MAX)),
+                    Value::parse_uint32_from_str(&u32::MAX.to_string())
+                );
+                assert_eq!(
+                    Ok(Value::UInt32(u32::MIN)),
+                    Value::parse_uint32_from_str(&u32::MIN.to_string())
+                );
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_uint32_from_str_err_val_too_big() {
+                Value::parse_uint32_from_str(&u64::MAX.to_string()).unwrap();
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_uint32_from_str_err_val_too_small() {
+                Value::parse_uint32_from_str("-1").unwrap();
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_uint32_from_str_err_not_an_uint32() {
+                Value::parse_uint32_from_str("not-an-uint32").unwrap();
+            }
         }
 
-        #[test]
-        pub fn parse_int32_from_str() {
-            assert_eq!(
-                Ok(Value::Int32(i32::MAX)),
-                Value::parse_int32_from_str(&i32::MAX.to_string())
-            );
-            assert_eq!(
-                Ok(Value::Int32(i32::MIN)),
-                Value::parse_int32_from_str(&i32::MIN.to_string())
-            );
+        mod uint64 {
+            use super::*;
+
+            #[test]
+            pub fn parse_uint64_from_str() {
+                assert_eq!(
+                    Ok(Value::UInt64(u64::MAX)),
+                    Value::parse_uint64_from_str(&u64::MAX.to_string())
+                );
+                assert_eq!(
+                    Ok(Value::UInt64(u64::MIN)),
+                    Value::parse_uint64_from_str(&u64::MIN.to_string())
+                );
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_uint64_from_str_err_val_too_big() {
+                Value::parse_uint64_from_str(&u128::MAX.to_string()).unwrap();
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_uint64_from_str_err_val_too_small() {
+                Value::parse_uint64_from_str("-1").unwrap();
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_uint64_from_str_err_not_an_uint64() {
+                Value::parse_uint64_from_str("not-an-uint64").unwrap();
+            }
         }
 
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_int32_from_str_err_val_too_big() {
-            Value::parse_int32_from_str(&i64::MAX.to_string()).unwrap();
+        mod uint128 {
+            use super::*;
+
+            #[test]
+            pub fn parse_uint128_from_str() {
+                assert_eq!(
+                    Ok(Value::UInt128(u128::MAX)),
+                    Value::parse_uint128_from_str(&u128::MAX.to_string())
+                );
+                assert_eq!(
+                    Ok(Value::UInt128(u128::MIN)),
+                    Value::parse_uint128_from_str(&u128::MIN.to_string())
+                );
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_uint128_from_str_err_val_too_big() {
+                // max is: 340282366920938463463374607431768211455
+                Value::parse_uint128_from_str("340282366920938463463374607431768211456").unwrap();
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_uint128_from_str_err_val_too_small() {
+                Value::parse_uint128_from_str("-1").unwrap();
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_uint128_from_str_err_not_an_uint128() {
+                Value::parse_uint128_from_str("not-an-uint128").unwrap();
+            }
         }
 
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_int32_from_str_err_val_too_small() {
-            Value::parse_int32_from_str(&i64::MIN.to_string()).unwrap();
+        mod float32 {
+            use super::*;
+
+            #[test]
+            pub fn parse_float32_from_str() {
+                assert_eq!(
+                    Ok(Value::Float32(f32::MAX)),
+                    Value::parse_float32_from_str(&f32::MAX.to_string())
+                );
+                assert_eq!(
+                    Ok(Value::Float32(f32::MIN)),
+                    Value::parse_float32_from_str(&f32::MIN.to_string())
+                );
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_float32_from_str_err_val_too_big() {
+                Value::parse_float32_from_str(&f64::MAX.to_string()).unwrap();
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_float32_from_str_err_val_too_small() {
+                Value::parse_float32_from_str(&f64::MIN.to_string()).unwrap();
+            }
+
+            #[test]
+            pub fn parse_float32_from_str_pos_inf() {
+                assert_eq!(
+                    Value::Float32(f32::INFINITY),
+                    Value::parse_float32_from_str_allow_inf_allow_nan("1.7976931348623157E+309")
+                        .unwrap(),
+                );
+            }
+
+            #[test]
+            pub fn parse_float32_from_str_neg_inf() {
+                assert_eq!(
+                    Value::Float32(f32::NEG_INFINITY),
+                    Value::parse_float32_from_str_allow_inf_allow_nan("-1.7976931348623157E+309")
+                        .unwrap(),
+                );
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_float32_from_str_with_inf_with_nan_err_not_an_float32() {
+                Value::parse_float32_from_str_allow_inf_allow_nan("not-an-float32").unwrap();
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_float32_from_str_err_not_an_float32() {
+                Value::parse_float32_from_str("not-an-float32").unwrap();
+            }
         }
 
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_int32_from_str_err_not_an_int32() {
-            Value::parse_int32_from_str("not-an-int32").unwrap();
+        mod float64 {
+            use super::*;
+
+            #[test]
+            pub fn parse_float64_from_str() {
+                assert_eq!(
+                    Ok(Value::Float64(f64::MAX)),
+                    Value::parse_float64_from_str(&f64::MAX.to_string())
+                );
+                assert_eq!(
+                    Ok(Value::Float64(f64::MIN)),
+                    Value::parse_float64_from_str(&f64::MIN.to_string())
+                );
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_float64_from_str_err_val_too_big() {
+                Value::parse_float64_from_str("1.7976931348623157E+309").unwrap();
+            }
+
+            #[test]
+            pub fn parse_float64_from_str_pos_inf() {
+                assert_eq!(
+                    Value::Float64(f64::INFINITY),
+                    Value::parse_float64_from_str_allow_inf_allow_nan("1.7976931348623157E+309")
+                        .unwrap(),
+                );
+            }
+
+            #[test]
+            pub fn parse_float64_from_str_neg_inf() {
+                assert_eq!(
+                    Value::Float64(f64::NEG_INFINITY),
+                    Value::parse_float64_from_str_allow_inf_allow_nan("-1.7976931348623157E+309")
+                        .unwrap(),
+                );
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_float64_from_str_with_inf_with_nan_err_not_an_float64() {
+                Value::parse_float64_from_str_allow_inf_allow_nan("not-an-float64").unwrap();
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_float64_from_str_err_val_too_small() {
+                Value::parse_float64_from_str("-1.7976931348623157E+309").unwrap();
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_float64_from_str_err_not_an_float64() {
+                Value::parse_float64_from_str("not-an-float64").unwrap();
+            }
         }
 
-        #[test]
-        pub fn parse_int64_from_str() {
-            assert_eq!(
-                Ok(Value::Int64(i64::MAX)),
-                Value::parse_int64_from_str(&i64::MAX.to_string())
-            );
-            assert_eq!(
-                Ok(Value::Int64(i64::MIN)),
-                Value::parse_int64_from_str(&i64::MIN.to_string())
-            );
+        mod bool {
+            use super::*;
+
+            #[test]
+            pub fn parse_bool_from_str_true() {
+                assert_eq!(Ok(Value::Bool(true)), Value::parse_bool_from_str("true"));
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_bool_from_str_err_uppercase_true() {
+                Value::parse_bool_from_str("TRUE").unwrap();
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_bool_from_str_err_mixedcase_true() {
+                Value::parse_bool_from_str("True").unwrap();
+            }
+
+            #[test]
+            pub fn parse_bool_from_str_false() {
+                assert_eq!(Ok(Value::Bool(false)), Value::parse_bool_from_str("false"));
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_bool_from_str_err_uppercase_false() {
+                Value::parse_bool_from_str("FALSE").unwrap();
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_bool_from_str_err_mixedcase_false() {
+                Value::parse_bool_from_str("False").unwrap();
+            }
+
+            #[test]
+            #[should_panic(expected = "Parsing(ValueFromStringFailed")]
+            pub fn parse_bool_from_str_err() {
+                Value::parse_bool_from_str("not-a-bool").unwrap();
+            }
         }
 
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_int64_from_str_err_val_too_big() {
-            Value::parse_int64_from_str(&i128::MAX.to_string()).unwrap();
-        }
+        mod char {
+            use super::*;
 
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_int64_from_str_err_val_too_small() {
-            Value::parse_int64_from_str(&i128::MIN.to_string()).unwrap();
-        }
+            #[test]
+            pub fn parse_char_from_str() {
+                assert_eq!(Ok(Value::Char('a')), Value::parse_char_from_str("a"));
+                assert_eq!(Ok(Value::Char('1')), Value::parse_char_from_str("1"));
+            }
 
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_int64_from_str_err_not_an_int64() {
-            Value::parse_int64_from_str("not-an-int64").unwrap();
-        }
-
-        #[test]
-        pub fn parse_int128_from_str() {
-            assert_eq!(
-                Ok(Value::Int128(i128::MAX)),
-                Value::parse_int128_from_str(&i128::MAX.to_string())
-            );
-            assert_eq!(
-                Ok(Value::Int128(i128::MIN)),
-                Value::parse_int128_from_str(&i128::MIN.to_string())
-            );
-        }
-
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_int128_from_str_err_val_too_big() {
-            // max is: 170141183460469231731687303715884105727
-            Value::parse_int128_from_str("170141183460469231731687303715884105728").unwrap();
-        }
-
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_int128_from_str_err_val_too_small() {
-            // min is: -170141183460469231731687303715884105728
-            Value::parse_int128_from_str("-170141183460469231731687303715884105729").unwrap();
-        }
-
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_int128_from_str_err_not_an_int128() {
-            Value::parse_int128_from_str("not-an-int128").unwrap();
-        }
-
-        #[test]
-        pub fn parse_uint8_from_str() {
-            assert_eq!(
-                Ok(Value::UInt8(u8::MAX)),
-                Value::parse_uint8_from_str(&u8::MAX.to_string())
-            );
-            assert_eq!(
-                Ok(Value::UInt8(u8::MIN)),
-                Value::parse_uint8_from_str(&u8::MIN.to_string())
-            );
-        }
-
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_uint8_from_str_err_val_too_big() {
-            Value::parse_uint8_from_str(&u16::MAX.to_string()).unwrap();
-        }
-
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_uint8_from_str_err_val_too_small() {
-            Value::parse_uint8_from_str("-1").unwrap();
-        }
-
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_uint8_from_str_err_not_an_uint8() {
-            Value::parse_uint8_from_str("not-an-uint8").unwrap();
-        }
-
-        #[test]
-        pub fn parse_uint16_from_str() {
-            assert_eq!(
-                Ok(Value::UInt16(u16::MAX)),
-                Value::parse_uint16_from_str(&u16::MAX.to_string())
-            );
-            assert_eq!(
-                Ok(Value::UInt16(u16::MIN)),
-                Value::parse_uint16_from_str(&u16::MIN.to_string())
-            );
-        }
-
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_uint16_from_str_err_val_too_big() {
-            Value::parse_uint16_from_str(&u32::MAX.to_string()).unwrap();
-        }
-
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_uint16_from_str_err_val_too_small() {
-            Value::parse_uint16_from_str("-1").unwrap();
-        }
-
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_uint16_from_str_err_not_an_uint16() {
-            Value::parse_uint16_from_str("not-an-uint16").unwrap();
-        }
-
-        #[test]
-        pub fn parse_uint32_from_str() {
-            assert_eq!(
-                Ok(Value::UInt32(u32::MAX)),
-                Value::parse_uint32_from_str(&u32::MAX.to_string())
-            );
-            assert_eq!(
-                Ok(Value::UInt32(u32::MIN)),
-                Value::parse_uint32_from_str(&u32::MIN.to_string())
-            );
-        }
-
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_uint32_from_str_err_val_too_big() {
-            Value::parse_uint32_from_str(&u64::MAX.to_string()).unwrap();
-        }
-
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_uint32_from_str_err_val_too_small() {
-            Value::parse_uint32_from_str("-1").unwrap();
-        }
-
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_uint32_from_str_err_not_an_uint32() {
-            Value::parse_uint32_from_str("not-an-uint32").unwrap();
-        }
-
-        #[test]
-        pub fn parse_uint64_from_str() {
-            assert_eq!(
-                Ok(Value::UInt64(u64::MAX)),
-                Value::parse_uint64_from_str(&u64::MAX.to_string())
-            );
-            assert_eq!(
-                Ok(Value::UInt64(u64::MIN)),
-                Value::parse_uint64_from_str(&u64::MIN.to_string())
-            );
-        }
-
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_uint64_from_str_err_val_too_big() {
-            Value::parse_uint64_from_str(&u128::MAX.to_string()).unwrap();
-        }
-
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_uint64_from_str_err_val_too_small() {
-            Value::parse_uint64_from_str("-1").unwrap();
-        }
-
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_uint64_from_str_err_not_an_uint64() {
-            Value::parse_uint64_from_str("not-an-uint64").unwrap();
-        }
-
-        #[test]
-        pub fn parse_uint128_from_str() {
-            assert_eq!(
-                Ok(Value::UInt128(u128::MAX)),
-                Value::parse_uint128_from_str(&u128::MAX.to_string())
-            );
-            assert_eq!(
-                Ok(Value::UInt128(u128::MIN)),
-                Value::parse_uint128_from_str(&u128::MIN.to_string())
-            );
-        }
-
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_uint128_from_str_err_val_too_big() {
-            // max is: 340282366920938463463374607431768211455
-            Value::parse_uint128_from_str("340282366920938463463374607431768211456").unwrap();
-        }
-
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_uint128_from_str_err_val_too_small() {
-            Value::parse_uint128_from_str("-1").unwrap();
-        }
-
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_uint128_from_str_err_not_an_uint128() {
-            Value::parse_uint128_from_str("not-an-uint128").unwrap();
-        }
-
-        #[test]
-        pub fn parse_float32_from_str() {
-            assert_eq!(
-                Ok(Value::Float32(f32::MAX)),
-                Value::parse_float32_from_str(&f32::MAX.to_string())
-            );
-            assert_eq!(
-                Ok(Value::Float32(f32::MIN)),
-                Value::parse_float32_from_str(&f32::MIN.to_string())
-            );
-        }
-
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_float32_from_str_err_val_too_big() {
-            Value::parse_float32_from_str(&f64::MAX.to_string()).unwrap();
-        }
-
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_float32_from_str_err_val_too_small() {
-            Value::parse_float32_from_str(&f64::MIN.to_string()).unwrap();
-        }
-
-        #[test]
-        pub fn parse_float32_from_str_pos_inf() {
-            assert_eq!(
-                Value::Float32(f32::INFINITY),
-                Value::parse_float32_from_str_allow_inf_allow_nan("1.7976931348623157E+309")
-                    .unwrap(),
-            );
-        }
-
-        #[test]
-        pub fn parse_float32_from_str_neg_inf() {
-            assert_eq!(
-                Value::Float32(f32::NEG_INFINITY),
-                Value::parse_float32_from_str_allow_inf_allow_nan("-1.7976931348623157E+309")
-                    .unwrap(),
-            );
-        }
-
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_float32_from_str_err_not_an_float32() {
-            Value::parse_float32_from_str("not-an-float32").unwrap();
-        }
-
-        #[test]
-        pub fn parse_float64_from_str() {
-            assert_eq!(
-                Ok(Value::Float64(f64::MAX)),
-                Value::parse_float64_from_str(&f64::MAX.to_string())
-            );
-            assert_eq!(
-                Ok(Value::Float64(f64::MIN)),
-                Value::parse_float64_from_str(&f64::MIN.to_string())
-            );
-        }
-
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_float64_from_str_err_val_too_big() {
-            Value::parse_float64_from_str("1.7976931348623157E+309").unwrap();
-        }
-
-        #[test]
-        pub fn parse_float64_from_str_pos_inf() {
-            assert_eq!(
-                Value::Float64(f64::INFINITY),
-                Value::parse_float64_from_str_allow_inf_allow_nan("1.7976931348623157E+309")
-                    .unwrap(),
-            );
-        }
-
-        #[test]
-        pub fn parse_float64_from_str_neg_inf() {
-            assert_eq!(
-                Value::Float64(f64::NEG_INFINITY),
-                Value::parse_float64_from_str_allow_inf_allow_nan("-1.7976931348623157E+309")
-                    .unwrap(),
-            );
-        }
-
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_float64_from_str_err_val_too_small() {
-            Value::parse_float64_from_str("-1.7976931348623157E+309").unwrap();
-        }
-
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_float64_from_str_err_not_an_float64() {
-            Value::parse_float64_from_str("not-an-float64").unwrap();
-        }
-
-        #[test]
-        pub fn parse_bool_from_str_true() {
-            assert_eq!(Ok(Value::Bool(true)), Value::parse_bool_from_str("true"));
-        }
-
-        #[test]
-        pub fn parse_bool_from_str_false() {
-            assert_eq!(Ok(Value::Bool(false)), Value::parse_bool_from_str("false"));
-        }
-
-        #[test]
-        #[should_panic(expected = "Parsing(ValueFromStringFailed")]
-        pub fn parse_bool_from_str_err() {
-            Value::parse_bool_from_str("not-a-bool").unwrap();
-        }
-
-        #[test]
-        pub fn parse_char_from_str() {
-            assert_eq!(Ok(Value::Char('a')), Value::parse_char_from_str("a"));
-            assert_eq!(Ok(Value::Char('1')), Value::parse_char_from_str("1"));
-        }
-
-        #[test]
-        #[should_panic(expected = "Err(Parsing(ValueFromStringFailed")]
-        pub fn parse_char_from_str_err() {
-            assert_eq!(Ok(Value::Char('a')), Value::parse_char_from_str("abc"));
+            #[test]
+            #[should_panic(expected = "Err(Parsing(ValueFromStringFailed")]
+            pub fn parse_char_from_str_err() {
+                assert_eq!(Ok(Value::Char('a')), Value::parse_char_from_str("abc"));
+            }
         }
     }
 
@@ -1049,6 +1148,11 @@ mod tests {
                 Ok(Value::Decimal(Decimal::new(1123, 3))),
                 Value::parse_decimal_from_str("1.123")
             );
+        }
+
+        #[test]
+        pub fn parse_decimal_from_str_none() {
+            assert_eq!(Ok(Value::None), Value::parse_decimal_from_str(""));
         }
 
         #[test]
@@ -1068,11 +1172,19 @@ mod tests {
         }
 
         #[test]
+        pub fn parse_decimal_from_str_scientific_none() {
+            assert_eq!(
+                Ok(Value::None),
+                Value::parse_decimal_from_str_scientific("")
+            );
+        }
+
+        #[test]
         #[should_panic(
-            expected = "Parsing(ValueFromStringFailed { src_value: \"1.41343e+00A\", target_type: \"Value::Decimal\", details: Some(\"Original error: Invalid decimal: unknown character\") })"
+            expected = "Parsing(ValueFromStringFailed { src_value: \"1.41343e+00A\", target_type: \"Value::Decimal\", details: Some(\"Original error: Failed to parse\") })"
         )]
         pub fn parse_decimal_from_str_scientific_err() {
-            Value::parse_decimal_from_str("1.41343e+00A").unwrap();
+            Value::parse_decimal_from_str_scientific("1.41343e+00A").unwrap();
         }
     }
 
@@ -1083,7 +1195,7 @@ mod tests {
 
         #[test]
         pub fn parse_naive_date_from_str_w_pattern() {
-            let exp = NaiveDate::from_ymd(2022, 12, 31);
+            let exp = NaiveDate::from_ymd_opt(2022, 12, 31).unwrap();
 
             assert_eq!(
                 Ok(Value::NaiveDate(exp)),
@@ -1093,6 +1205,7 @@ mod tests {
                 Ok(Value::NaiveDate(exp)),
                 Value::parse_naive_date_from_str("2022-12-31", "%F")
             );
+            assert_eq!(Ok(Value::None), Value::parse_naive_date_from_str("", "%F"));
         }
 
         #[test]
@@ -1113,7 +1226,7 @@ mod tests {
 
         #[test]
         pub fn parse_naive_date_from_str_iso8601_ymd() {
-            let exp = NaiveDate::from_ymd(2022, 12, 31);
+            let exp = NaiveDate::from_ymd_opt(2022, 12, 31).unwrap();
 
             assert_eq!(
                 Ok(Value::NaiveDate(exp)),
@@ -1122,8 +1235,19 @@ mod tests {
         }
 
         #[test]
+        pub fn parse_naive_date_from_str_iso8601_ymd_none() {
+            assert_eq!(
+                Ok(Value::None),
+                Value::parse_naive_date_from_str_iso8601_ymd("")
+            );
+        }
+
+        #[test]
         pub fn parse_naive_date_time_from_str_w_pattern() {
-            let exp = NaiveDate::from_ymd(2022, 12, 31).and_hms(12, 11, 10);
+            let exp = NaiveDate::from_ymd_opt(2022, 12, 31)
+                .unwrap()
+                .and_hms_opt(12, 11, 10)
+                .unwrap();
 
             assert_eq!(
                 Ok(Value::NaiveDateTime(exp)),
@@ -1132,6 +1256,10 @@ mod tests {
             assert_eq!(
                 Ok(Value::NaiveDateTime(exp)),
                 Value::parse_naive_date_time_from_str("2022-12-31 12:11:10", "%F %T")
+            );
+            assert_eq!(
+                Ok(Value::None),
+                Value::parse_naive_date_time_from_str("", "%F %T")
             );
         }
 
@@ -1155,16 +1283,27 @@ mod tests {
 
         #[test]
         pub fn parse_naive_date_time_from_str_iso8601_ymd_hms() {
-            let exp = NaiveDate::from_ymd(2022, 12, 31).and_hms(12, 11, 10);
+            let exp = NaiveDate::from_ymd_opt(2022, 12, 31)
+                .unwrap()
+                .and_hms_opt(12, 11, 10)
+                .unwrap();
+
             assert_eq!(
                 Ok(Value::NaiveDateTime(exp)),
                 Value::parse_naive_date_time_from_str_iso8601_ymd_hms("2022-12-31T12:11:10")
+            );
+            assert_eq!(
+                Ok(Value::None),
+                Value::parse_naive_date_time_from_str_iso8601_ymd_hms("")
             );
         }
 
         #[test]
         pub fn parse_naive_date_time_from_str_iso8601_ymd_hms_millies() {
-            let exp = NaiveDate::from_ymd(2022, 12, 31).and_hms_milli(12, 11, 10, 100);
+            let exp = NaiveDate::from_ymd_opt(2022, 12, 31)
+                .unwrap()
+                .and_hms_milli_opt(12, 11, 10, 100)
+                .unwrap();
             assert_eq!(
                 Ok(Value::NaiveDateTime(exp)),
                 Value::parse_naive_date_time_from_str_iso8601_ymd_hms_millies(
@@ -1172,7 +1311,10 @@ mod tests {
                 )
             );
 
-            let exp = NaiveDate::from_ymd(2022, 12, 31).and_hms_milli(12, 11, 10, 0);
+            let exp = NaiveDate::from_ymd_opt(2022, 12, 31)
+                .unwrap()
+                .and_hms_milli_opt(12, 11, 10, 0)
+                .unwrap();
             assert_eq!(
                 Ok(Value::NaiveDateTime(exp)),
                 Value::parse_naive_date_time_from_str_iso8601_ymd_hms_millies(
@@ -1180,21 +1322,30 @@ mod tests {
                 )
             );
 
-            let exp = NaiveDate::from_ymd(2022, 12, 31).and_hms_milli(12, 11, 10, 0);
+            let exp = NaiveDate::from_ymd_opt(2022, 12, 31)
+                .unwrap()
+                .and_hms_milli_opt(12, 11, 10, 0)
+                .unwrap();
             assert_eq!(
                 Ok(Value::NaiveDateTime(exp)),
                 Value::parse_naive_date_time_from_str_iso8601_ymd_hms_millies(
                     "2022-12-31T12:11:10"
                 )
             );
+
+            assert_eq!(
+                Ok(Value::None),
+                Value::parse_naive_date_time_from_str_iso8601_ymd_hms_millies("")
+            );
         }
 
         #[test]
         pub fn parse_date_time_from_str_w_pattern() {
             let hour_secs = 3600;
-            let exp: DateTime<FixedOffset> = FixedOffset::east(5 * hour_secs) // east = +; west = -
-                .ymd(2022, 12, 31)
-                .and_hms(6, 0, 0);
+            let exp: DateTime<FixedOffset> = FixedOffset::east_opt(5 * hour_secs) // east = +; west = -
+                .unwrap()
+                .with_ymd_and_hms(2022, 12, 31, 6, 0, 0)
+                .unwrap();
 
             let date_str = "2022-12-31T06:00:00+05:00";
             let res = Value::parse_date_time_from_str(date_str, "%FT%T%:z");
@@ -1202,6 +1353,12 @@ mod tests {
 
             let dt = DateTime::try_from(res.unwrap()).unwrap();
             assert_eq!(dt.to_rfc3339(), String::from(date_str));
+        }
+
+        #[test]
+        pub fn parse_date_time_from_str_w_pattern_none() {
+            let res = Value::parse_date_time_from_str("", "%FT%T%:z");
+            assert_eq!(Ok(Value::None), res);
         }
 
         #[test]
@@ -1231,9 +1388,10 @@ mod tests {
         #[test]
         pub fn parse_date_time_from_str_rfc3339_wo_millies() {
             let hour_secs = 3600;
-            let exp: DateTime<FixedOffset> = FixedOffset::east(5 * hour_secs) // east = +; west = -
-                .ymd(2022, 12, 31)
-                .and_hms(6, 0, 0);
+            let exp: DateTime<FixedOffset> = FixedOffset::east_opt(5 * hour_secs) // east = +; west = -
+                .unwrap()
+                .with_ymd_and_hms(2022, 12, 31, 6, 0, 0)
+                .unwrap();
 
             let date_str = "2022-12-31T06:00:00+05:00";
             let res = Value::parse_date_time_from_str_rfc3339(date_str);
@@ -1246,9 +1404,13 @@ mod tests {
         #[test]
         pub fn parse_date_time_from_str_rfc3339_w_millies() {
             let hour_secs = 3600;
-            let exp: DateTime<FixedOffset> = FixedOffset::east(5 * hour_secs) // east = +; west = -
-                .ymd(2022, 12, 31)
-                .and_hms_milli(6, 0, 0, 100);
+
+            let exp = NaiveDate::from_ymd_opt(2022, 12, 31)
+                .unwrap()
+                .and_hms_milli_opt(6, 0, 0, 100)
+                .unwrap()
+                .and_local_timezone(FixedOffset::east_opt(5 * hour_secs).unwrap())
+                .unwrap();
 
             let date_str = "2022-12-31T06:00:00.100+05:00";
             let res = Value::parse_date_time_from_str_rfc3339(date_str);
@@ -1261,9 +1423,12 @@ mod tests {
         #[test]
         pub fn parse_date_time_from_str_rfc3339_w_millies_empty() {
             let hour_secs = 3600;
-            let exp: DateTime<FixedOffset> = FixedOffset::east(5 * hour_secs) // east = +; west = -
-                .ymd(2022, 12, 31)
-                .and_hms_milli(6, 0, 0, 0);
+            let exp = NaiveDate::from_ymd_opt(2022, 12, 31)
+                .unwrap()
+                .and_hms_milli_opt(6, 0, 0, 0)
+                .unwrap()
+                .and_local_timezone(FixedOffset::east_opt(5 * hour_secs).unwrap())
+                .unwrap();
 
             let date_str = "2022-12-31T06:00:00.000+05:00";
             let res = Value::parse_date_time_from_str_rfc3339(date_str);
@@ -1277,11 +1442,21 @@ mod tests {
         }
 
         #[test]
+        pub fn parse_date_time_from_str_rfc3339_none() {
+            let res = Value::parse_date_time_from_str_rfc3339("");
+            assert_eq!(Ok(Value::None), res);
+        }
+
+        #[test]
         pub fn parse_date_time_from_str_rfc2822() {
             let hour_secs = 3600;
-            let exp: DateTime<FixedOffset> = FixedOffset::east(2 * hour_secs) // east = +; west = -
-                .ymd(2003, 7, 1)
-                .and_hms(10, 52, 37);
+
+            let exp = NaiveDate::from_ymd_opt(2003, 7, 1)
+                .unwrap()
+                .and_hms_milli_opt(10, 52, 37, 0)
+                .unwrap()
+                .and_local_timezone(FixedOffset::east_opt(2 * hour_secs).unwrap())
+                .unwrap();
 
             let date_str = "Tue, 01 Jul 2003 10:52:37 +0200";
             let res = Value::parse_date_time_from_str_rfc2822(date_str);
@@ -1290,10 +1465,24 @@ mod tests {
             let dt = DateTime::try_from(res.unwrap()).unwrap();
             assert_eq!(dt.to_rfc2822(), String::from(date_str));
         }
+
+        #[test]
+        pub fn parse_date_time_from_str_rfc2822_none() {
+            let res = Value::parse_date_time_from_str_rfc2822("");
+            assert_eq!(Ok(Value::None), res);
+        }
+
+        #[test]
+        #[should_panic(
+            expected = "Parsing(ValueFromStringFailed { src_value: \"foobar\", target_type: \"Value::DateTime\", details: Some(\"Original error: input contains invalid characters\") }"
+        )]
+        pub fn parse_date_time_from_str_rfc2822_err() {
+            Value::parse_date_time_from_str_rfc2822("foobar").unwrap();
+        }
     }
 
     mod default_values {
-        use chrono::{DateTime, FixedOffset, NaiveDate, TimeZone};
+        use chrono::{FixedOffset, NaiveDate};
         use rust_decimal::Decimal;
 
         use crate::value::Value;
@@ -1384,7 +1573,7 @@ mod tests {
         #[test]
         pub fn naive_date_default() {
             assert_eq!(
-                Value::NaiveDate(NaiveDate::from_ymd(1970, 01, 01)),
+                Value::NaiveDate(NaiveDate::from_ymd_opt(1970, 01, 01).unwrap()),
                 Value::naive_date_default()
             );
         }
@@ -1392,16 +1581,25 @@ mod tests {
         #[test]
         pub fn naive_date_time_default() {
             assert_eq!(
-                Value::NaiveDateTime(NaiveDate::from_ymd(1970, 01, 01).and_hms(00, 00, 00)),
+                Value::NaiveDateTime(
+                    NaiveDate::from_ymd_opt(1970, 01, 01)
+                        .unwrap()
+                        .and_hms_opt(00, 00, 00)
+                        .unwrap()
+                ),
                 Value::naive_date_time_default()
             );
         }
 
         #[test]
         pub fn date_time_default() {
-            let exp: DateTime<FixedOffset> = FixedOffset::east(0) // east = +; west = -
-                .ymd(1970, 01, 01)
-                .and_hms(0, 0, 0);
+            let exp = NaiveDate::from_ymd_opt(1970, 1, 1)
+                .unwrap() // This date exists for sure. Unwrap is safe here
+                .and_hms_milli_opt(0, 0, 0, 0)
+                .unwrap() // This time exists for sure. Unwrap is safe here
+                .and_local_timezone(FixedOffset::east_opt(0).unwrap())
+                .unwrap(); // This timezone (UTC) exists for sure. Unwrap is safe here
+
             assert_eq!(Value::DateTime(exp), Value::date_time_default());
         }
     }
@@ -1557,6 +1755,1159 @@ mod tests {
                 Value::decimal_from_isize(isize::MAX)
             );
         }
+
+        // TODO
+        // decimal_from_f32
+        // decimal_from_f64
+        // decimal_from_f32_retain
+        // decimal_from_f64_retain
+    }
+
+    mod is_type {
+        use chrono::{FixedOffset, NaiveDate};
+        use rust_decimal::{prelude::FromPrimitive, Decimal};
+
+        use crate::value::Value;
+
+        #[test]
+        pub fn is_type_none() {
+            assert_eq!(true, Value::None.is_none()); // <-- This one is the only "true" test.
+
+            assert_eq!(false, Value::Int8(i8::MIN).is_none());
+            assert_eq!(false, Value::Int16(i16::MIN).is_none());
+            assert_eq!(false, Value::Int32(i32::MIN).is_none());
+            assert_eq!(false, Value::Int64(i64::MIN).is_none());
+            assert_eq!(false, Value::Int128(i128::MIN).is_none());
+
+            assert_eq!(false, Value::UInt8(u8::MIN).is_none());
+            assert_eq!(false, Value::UInt16(u16::MIN).is_none());
+            assert_eq!(false, Value::UInt32(u32::MIN).is_none());
+            assert_eq!(false, Value::UInt64(u64::MIN).is_none());
+            assert_eq!(false, Value::UInt128(u128::MIN).is_none());
+
+            assert_eq!(false, Value::Float32(f32::MIN).is_none());
+            assert_eq!(false, Value::Float64(f64::MIN).is_none());
+
+            assert_eq!(
+                false,
+                Value::NaiveDate(NaiveDate::from_ymd_opt(2023, 1, 1).unwrap()).is_none()
+            );
+            assert_eq!(
+                false,
+                Value::NaiveDateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                )
+                .is_none()
+            );
+            assert_eq!(
+                false,
+                Value::DateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                        .and_local_timezone(FixedOffset::east_opt(0).unwrap())
+                        .unwrap()
+                )
+                .is_none()
+            );
+
+            assert_eq!(false, Value::Char('a').is_none());
+            assert_eq!(false, Value::Bool(true).is_none());
+            assert_eq!(false, Value::String(String::from("string")).is_none());
+            assert_eq!(
+                false,
+                Value::Decimal(Decimal::from_f32(1.1).unwrap()).is_none()
+            );
+        }
+
+        #[test]
+        pub fn is_type_some() {
+            assert_eq!(false, Value::None.is_some()); // <-- This one is the only "true" test.
+
+            assert_eq!(true, Value::Int8(i8::MIN).is_some());
+            assert_eq!(true, Value::Int16(i16::MIN).is_some());
+            assert_eq!(true, Value::Int32(i32::MIN).is_some());
+            assert_eq!(true, Value::Int64(i64::MIN).is_some());
+            assert_eq!(true, Value::Int128(i128::MIN).is_some());
+
+            assert_eq!(true, Value::UInt8(u8::MIN).is_some());
+            assert_eq!(true, Value::UInt16(u16::MIN).is_some());
+            assert_eq!(true, Value::UInt32(u32::MIN).is_some());
+            assert_eq!(true, Value::UInt64(u64::MIN).is_some());
+            assert_eq!(true, Value::UInt128(u128::MIN).is_some());
+
+            assert_eq!(true, Value::Float32(f32::MIN).is_some());
+            assert_eq!(true, Value::Float64(f64::MIN).is_some());
+
+            assert_eq!(
+                true,
+                Value::NaiveDate(NaiveDate::from_ymd_opt(2023, 1, 1).unwrap()).is_some()
+            );
+            assert_eq!(
+                true,
+                Value::NaiveDateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                )
+                .is_some()
+            );
+            assert_eq!(
+                true,
+                Value::DateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                        .and_local_timezone(FixedOffset::east_opt(0).unwrap())
+                        .unwrap()
+                )
+                .is_some()
+            );
+
+            assert_eq!(true, Value::Char('a').is_some());
+            assert_eq!(true, Value::Bool(true).is_some());
+            assert_eq!(true, Value::String(String::from("string")).is_some());
+            assert_eq!(
+                true,
+                Value::Decimal(Decimal::from_f32(1.1).unwrap()).is_some()
+            );
+        }
+
+        #[test]
+        pub fn is_type_int8() {
+            assert_eq!(true, Value::Int8(i8::MIN).is_int8()); // <-- This one is the only "true" test.
+
+            assert_eq!(false, Value::Int16(i16::MIN).is_int8());
+            assert_eq!(false, Value::Int32(i32::MIN).is_int8());
+            assert_eq!(false, Value::Int64(i64::MIN).is_int8());
+            assert_eq!(false, Value::Int128(i128::MIN).is_int8());
+
+            assert_eq!(false, Value::UInt8(u8::MIN).is_int8());
+            assert_eq!(false, Value::UInt16(u16::MIN).is_int8());
+            assert_eq!(false, Value::UInt32(u32::MIN).is_int8());
+            assert_eq!(false, Value::UInt64(u64::MIN).is_int8());
+            assert_eq!(false, Value::UInt128(u128::MIN).is_int8());
+
+            assert_eq!(false, Value::Float32(f32::MIN).is_int8());
+            assert_eq!(false, Value::Float64(f64::MIN).is_int8());
+
+            assert_eq!(
+                false,
+                Value::NaiveDate(NaiveDate::from_ymd_opt(2023, 1, 1).unwrap()).is_int8()
+            );
+            assert_eq!(
+                false,
+                Value::NaiveDateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                )
+                .is_int8()
+            );
+            assert_eq!(
+                false,
+                Value::DateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                        .and_local_timezone(FixedOffset::east_opt(0).unwrap())
+                        .unwrap()
+                )
+                .is_int8()
+            );
+
+            assert_eq!(false, Value::Char('a').is_int8());
+            assert_eq!(false, Value::Bool(true).is_int8());
+            assert_eq!(false, Value::String(String::from("string")).is_int8());
+            assert_eq!(
+                false,
+                Value::Decimal(Decimal::from_f32(1.1).unwrap()).is_int8()
+            );
+        }
+
+        #[test]
+        pub fn is_type_int16() {
+            assert_eq!(false, Value::Int8(i8::MIN).is_int16());
+
+            assert_eq!(true, Value::Int16(i16::MIN).is_int16()); // <-- This one is the only "true" test.
+
+            assert_eq!(false, Value::Int32(i32::MIN).is_int16());
+            assert_eq!(false, Value::Int64(i64::MIN).is_int16());
+            assert_eq!(false, Value::Int128(i128::MIN).is_int16());
+
+            assert_eq!(false, Value::UInt8(u8::MIN).is_int16());
+            assert_eq!(false, Value::UInt16(u16::MIN).is_int16());
+            assert_eq!(false, Value::UInt32(u32::MIN).is_int16());
+            assert_eq!(false, Value::UInt64(u64::MIN).is_int16());
+            assert_eq!(false, Value::UInt128(u128::MIN).is_int16());
+
+            assert_eq!(false, Value::Float32(f32::MIN).is_int16());
+            assert_eq!(false, Value::Float64(f64::MIN).is_int16());
+
+            assert_eq!(
+                false,
+                Value::NaiveDate(NaiveDate::from_ymd_opt(2023, 1, 1).unwrap()).is_int16()
+            );
+            assert_eq!(
+                false,
+                Value::NaiveDateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                )
+                .is_int16()
+            );
+            assert_eq!(
+                false,
+                Value::DateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                        .and_local_timezone(FixedOffset::east_opt(0).unwrap())
+                        .unwrap()
+                )
+                .is_int16()
+            );
+
+            assert_eq!(false, Value::Char('a').is_int16());
+            assert_eq!(false, Value::Bool(true).is_int16());
+            assert_eq!(false, Value::String(String::from("string")).is_int16());
+            assert_eq!(
+                false,
+                Value::Decimal(Decimal::from_f32(1.1).unwrap()).is_int16()
+            );
+        }
+
+        #[test]
+        pub fn is_type_int32() {
+            assert_eq!(false, Value::Int8(i8::MIN).is_int32());
+            assert_eq!(false, Value::Int16(i16::MIN).is_int32());
+
+            assert_eq!(true, Value::Int32(i32::MIN).is_int32()); // <-- This one is the only "true" test.
+
+            assert_eq!(false, Value::Int64(i64::MIN).is_int32());
+            assert_eq!(false, Value::Int128(i128::MIN).is_int32());
+
+            assert_eq!(false, Value::UInt8(u8::MIN).is_int32());
+            assert_eq!(false, Value::UInt16(u16::MIN).is_int32());
+            assert_eq!(false, Value::UInt32(u32::MIN).is_int32());
+            assert_eq!(false, Value::UInt64(u64::MIN).is_int32());
+            assert_eq!(false, Value::UInt128(u128::MIN).is_int32());
+
+            assert_eq!(false, Value::Float32(f32::MIN).is_int32());
+            assert_eq!(false, Value::Float64(f64::MIN).is_int32());
+
+            assert_eq!(
+                false,
+                Value::NaiveDate(NaiveDate::from_ymd_opt(2023, 1, 1).unwrap()).is_int32()
+            );
+            assert_eq!(
+                false,
+                Value::NaiveDateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                )
+                .is_int32()
+            );
+            assert_eq!(
+                false,
+                Value::DateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                        .and_local_timezone(FixedOffset::east_opt(0).unwrap())
+                        .unwrap()
+                )
+                .is_int32()
+            );
+
+            assert_eq!(false, Value::Char('a').is_int32());
+            assert_eq!(false, Value::Bool(true).is_int32());
+            assert_eq!(false, Value::String(String::from("string")).is_int32());
+            assert_eq!(
+                false,
+                Value::Decimal(Decimal::from_f32(1.1).unwrap()).is_int32()
+            );
+        }
+
+        #[test]
+        pub fn is_type_int64() {
+            assert_eq!(false, Value::Int8(i8::MIN).is_int64());
+            assert_eq!(false, Value::Int16(i16::MIN).is_int64());
+            assert_eq!(false, Value::Int32(i32::MIN).is_int64());
+
+            assert_eq!(true, Value::Int64(i64::MIN).is_int64()); // <-- This one is the only "true" test.
+
+            assert_eq!(false, Value::Int128(i128::MIN).is_int64());
+
+            assert_eq!(false, Value::UInt8(u8::MIN).is_int64());
+            assert_eq!(false, Value::UInt16(u16::MIN).is_int64());
+            assert_eq!(false, Value::UInt32(u32::MIN).is_int64());
+            assert_eq!(false, Value::UInt64(u64::MIN).is_int64());
+            assert_eq!(false, Value::UInt128(u128::MIN).is_int64());
+
+            assert_eq!(false, Value::Float32(f32::MIN).is_int64());
+            assert_eq!(false, Value::Float64(f64::MIN).is_int64());
+
+            assert_eq!(
+                false,
+                Value::NaiveDate(NaiveDate::from_ymd_opt(2023, 1, 1).unwrap()).is_int64()
+            );
+            assert_eq!(
+                false,
+                Value::NaiveDateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                )
+                .is_int64()
+            );
+            assert_eq!(
+                false,
+                Value::DateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                        .and_local_timezone(FixedOffset::east_opt(0).unwrap())
+                        .unwrap()
+                )
+                .is_int64()
+            );
+
+            assert_eq!(false, Value::Char('a').is_int64());
+            assert_eq!(false, Value::Bool(true).is_int64());
+            assert_eq!(false, Value::String(String::from("string")).is_int64());
+            assert_eq!(
+                false,
+                Value::Decimal(Decimal::from_f32(1.1).unwrap()).is_int64()
+            );
+        }
+
+        #[test]
+        pub fn is_type_int128() {
+            assert_eq!(false, Value::Int8(i8::MIN).is_int128());
+            assert_eq!(false, Value::Int16(i16::MIN).is_int128());
+            assert_eq!(false, Value::Int32(i32::MIN).is_int128());
+            assert_eq!(false, Value::Int64(i64::MIN).is_int128());
+
+            assert_eq!(true, Value::Int128(i128::MIN).is_int128()); // <-- This one is the only "true" test.
+
+            assert_eq!(false, Value::UInt8(u8::MIN).is_int128());
+            assert_eq!(false, Value::UInt16(u16::MIN).is_int128());
+            assert_eq!(false, Value::UInt32(u32::MIN).is_int128());
+            assert_eq!(false, Value::UInt64(u64::MIN).is_int128());
+            assert_eq!(false, Value::UInt128(u128::MIN).is_int128());
+
+            assert_eq!(false, Value::Float32(f32::MIN).is_int128());
+            assert_eq!(false, Value::Float64(f64::MIN).is_int128());
+
+            assert_eq!(
+                false,
+                Value::NaiveDate(NaiveDate::from_ymd_opt(2023, 1, 1).unwrap()).is_int128()
+            );
+            assert_eq!(
+                false,
+                Value::NaiveDateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                )
+                .is_int128()
+            );
+            assert_eq!(
+                false,
+                Value::DateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                        .and_local_timezone(FixedOffset::east_opt(0).unwrap())
+                        .unwrap()
+                )
+                .is_int128()
+            );
+
+            assert_eq!(false, Value::Char('a').is_int128());
+            assert_eq!(false, Value::Bool(true).is_int128());
+            assert_eq!(false, Value::String(String::from("string")).is_int128());
+            assert_eq!(
+                false,
+                Value::Decimal(Decimal::from_f32(1.1).unwrap()).is_int128()
+            );
+        }
+
+        #[test]
+        pub fn is_type_uint8() {
+            assert_eq!(false, Value::Int8(i8::MIN).is_uint8());
+            assert_eq!(false, Value::Int16(i16::MIN).is_uint8());
+            assert_eq!(false, Value::Int32(i32::MIN).is_uint8());
+            assert_eq!(false, Value::Int64(i64::MIN).is_uint8());
+            assert_eq!(false, Value::Int128(i128::MIN).is_uint8());
+
+            assert_eq!(true, Value::UInt8(u8::MIN).is_uint8()); // <-- This one is the only "true" test.
+            assert_eq!(false, Value::UInt16(u16::MIN).is_uint8());
+            assert_eq!(false, Value::UInt32(u32::MIN).is_uint8());
+            assert_eq!(false, Value::UInt64(u64::MIN).is_uint8());
+            assert_eq!(false, Value::UInt128(u128::MIN).is_uint8());
+
+            assert_eq!(false, Value::Float32(f32::MIN).is_uint8());
+            assert_eq!(false, Value::Float64(f64::MIN).is_uint8());
+
+            assert_eq!(
+                false,
+                Value::NaiveDate(NaiveDate::from_ymd_opt(2023, 1, 1).unwrap()).is_uint8()
+            );
+            assert_eq!(
+                false,
+                Value::NaiveDateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                )
+                .is_uint8()
+            );
+            assert_eq!(
+                false,
+                Value::DateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                        .and_local_timezone(FixedOffset::east_opt(0).unwrap())
+                        .unwrap()
+                )
+                .is_uint8()
+            );
+
+            assert_eq!(false, Value::Char('a').is_uint8());
+            assert_eq!(false, Value::Bool(true).is_uint8());
+            assert_eq!(false, Value::String(String::from("string")).is_uint8());
+            assert_eq!(
+                false,
+                Value::Decimal(Decimal::from_f32(1.1).unwrap()).is_uint8()
+            );
+        }
+
+        #[test]
+        pub fn is_type_uint16() {
+            assert_eq!(false, Value::Int8(i8::MIN).is_uint16());
+            assert_eq!(false, Value::Int16(i16::MIN).is_uint16());
+            assert_eq!(false, Value::Int32(i32::MIN).is_uint16());
+            assert_eq!(false, Value::Int64(i64::MIN).is_uint16());
+            assert_eq!(false, Value::Int128(i128::MIN).is_uint16());
+
+            assert_eq!(false, Value::UInt8(u8::MIN).is_uint16());
+            assert_eq!(true, Value::UInt16(u16::MIN).is_uint16()); // <-- This one is the only "true" test.
+            assert_eq!(false, Value::UInt32(u32::MIN).is_uint16());
+            assert_eq!(false, Value::UInt64(u64::MIN).is_uint16());
+            assert_eq!(false, Value::UInt128(u128::MIN).is_uint16());
+
+            assert_eq!(false, Value::Float32(f32::MIN).is_uint16());
+            assert_eq!(false, Value::Float64(f64::MIN).is_uint16());
+
+            assert_eq!(
+                false,
+                Value::NaiveDate(NaiveDate::from_ymd_opt(2023, 1, 1).unwrap()).is_uint16()
+            );
+            assert_eq!(
+                false,
+                Value::NaiveDateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                )
+                .is_uint16()
+            );
+            assert_eq!(
+                false,
+                Value::DateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                        .and_local_timezone(FixedOffset::east_opt(0).unwrap())
+                        .unwrap()
+                )
+                .is_uint16()
+            );
+
+            assert_eq!(false, Value::Char('a').is_uint16());
+            assert_eq!(false, Value::Bool(true).is_uint16());
+            assert_eq!(false, Value::String(String::from("string")).is_uint16());
+            assert_eq!(
+                false,
+                Value::Decimal(Decimal::from_f32(1.1).unwrap()).is_uint16()
+            );
+        }
+
+        #[test]
+        pub fn is_type_uint32() {
+            assert_eq!(false, Value::Int8(i8::MIN).is_uint32());
+            assert_eq!(false, Value::Int16(i16::MIN).is_uint32());
+            assert_eq!(false, Value::Int32(i32::MIN).is_uint32());
+            assert_eq!(false, Value::Int64(i64::MIN).is_uint32());
+            assert_eq!(false, Value::Int128(i128::MIN).is_uint32());
+
+            assert_eq!(false, Value::UInt8(u8::MIN).is_uint32());
+            assert_eq!(false, Value::UInt16(u16::MIN).is_uint32());
+            assert_eq!(true, Value::UInt32(u32::MIN).is_uint32()); // <-- This one is the only "true" test.
+            assert_eq!(false, Value::UInt64(u64::MIN).is_uint32());
+            assert_eq!(false, Value::UInt128(u128::MIN).is_uint32());
+
+            assert_eq!(false, Value::Float32(f32::MIN).is_uint32());
+            assert_eq!(false, Value::Float64(f64::MIN).is_uint32());
+
+            assert_eq!(
+                false,
+                Value::NaiveDate(NaiveDate::from_ymd_opt(2023, 1, 1).unwrap()).is_uint32()
+            );
+            assert_eq!(
+                false,
+                Value::NaiveDateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                )
+                .is_uint32()
+            );
+            assert_eq!(
+                false,
+                Value::DateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                        .and_local_timezone(FixedOffset::east_opt(0).unwrap())
+                        .unwrap()
+                )
+                .is_uint32()
+            );
+
+            assert_eq!(false, Value::Char('a').is_uint32());
+            assert_eq!(false, Value::Bool(true).is_uint32());
+            assert_eq!(false, Value::String(String::from("string")).is_uint32());
+            assert_eq!(
+                false,
+                Value::Decimal(Decimal::from_f32(1.1).unwrap()).is_uint32()
+            );
+        }
+
+        #[test]
+        pub fn is_type_uint64() {
+            assert_eq!(false, Value::Int8(i8::MIN).is_uint64());
+            assert_eq!(false, Value::Int16(i16::MIN).is_uint64());
+            assert_eq!(false, Value::Int32(i32::MIN).is_uint64());
+            assert_eq!(false, Value::Int64(i64::MIN).is_uint64());
+            assert_eq!(false, Value::Int128(i128::MIN).is_uint64());
+
+            assert_eq!(false, Value::UInt8(u8::MIN).is_uint64());
+            assert_eq!(false, Value::UInt16(u16::MIN).is_uint64());
+            assert_eq!(false, Value::UInt32(u32::MIN).is_uint64());
+            assert_eq!(true, Value::UInt64(u64::MIN).is_uint64()); // <-- This one is the only "true" test.
+            assert_eq!(false, Value::UInt128(u128::MIN).is_uint64());
+
+            assert_eq!(false, Value::Float32(f32::MIN).is_uint64());
+            assert_eq!(false, Value::Float64(f64::MIN).is_uint64());
+
+            assert_eq!(
+                false,
+                Value::NaiveDate(NaiveDate::from_ymd_opt(2023, 1, 1).unwrap()).is_uint64()
+            );
+            assert_eq!(
+                false,
+                Value::NaiveDateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                )
+                .is_uint64()
+            );
+            assert_eq!(
+                false,
+                Value::DateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                        .and_local_timezone(FixedOffset::east_opt(0).unwrap())
+                        .unwrap()
+                )
+                .is_uint64()
+            );
+
+            assert_eq!(false, Value::Char('a').is_uint64());
+            assert_eq!(false, Value::Bool(true).is_uint64());
+            assert_eq!(false, Value::String(String::from("string")).is_uint64());
+            assert_eq!(
+                false,
+                Value::Decimal(Decimal::from_f32(1.1).unwrap()).is_uint64()
+            );
+        }
+
+        #[test]
+        pub fn is_type_uint128() {
+            assert_eq!(false, Value::Int8(i8::MIN).is_uint128());
+            assert_eq!(false, Value::Int16(i16::MIN).is_uint128());
+            assert_eq!(false, Value::Int32(i32::MIN).is_uint128());
+            assert_eq!(false, Value::Int64(i64::MIN).is_uint128());
+            assert_eq!(false, Value::Int128(i128::MIN).is_uint128());
+
+            assert_eq!(false, Value::UInt8(u8::MIN).is_uint128());
+            assert_eq!(false, Value::UInt16(u16::MIN).is_uint128());
+            assert_eq!(false, Value::UInt32(u32::MIN).is_uint128());
+            assert_eq!(false, Value::UInt64(u64::MIN).is_uint128());
+            assert_eq!(true, Value::UInt128(u128::MIN).is_uint128()); // <-- This one is the only "true" test.
+
+            assert_eq!(false, Value::Float32(f32::MIN).is_uint128());
+            assert_eq!(false, Value::Float64(f64::MIN).is_uint128());
+
+            assert_eq!(
+                false,
+                Value::NaiveDate(NaiveDate::from_ymd_opt(2023, 1, 1).unwrap()).is_uint128()
+            );
+            assert_eq!(
+                false,
+                Value::NaiveDateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                )
+                .is_uint128()
+            );
+            assert_eq!(
+                false,
+                Value::DateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                        .and_local_timezone(FixedOffset::east_opt(0).unwrap())
+                        .unwrap()
+                )
+                .is_uint128()
+            );
+
+            assert_eq!(false, Value::Char('a').is_uint128());
+            assert_eq!(false, Value::Bool(true).is_uint128());
+            assert_eq!(false, Value::String(String::from("string")).is_uint128());
+            assert_eq!(
+                false,
+                Value::Decimal(Decimal::from_f32(1.1).unwrap()).is_uint128()
+            );
+        }
+
+        #[test]
+        pub fn is_type_float32() {
+            assert_eq!(false, Value::Int8(i8::MIN).is_float32());
+            assert_eq!(false, Value::Int16(i16::MIN).is_float32());
+            assert_eq!(false, Value::Int32(i32::MIN).is_float32());
+            assert_eq!(false, Value::Int64(i64::MIN).is_float32());
+            assert_eq!(false, Value::Int128(i128::MIN).is_float32());
+
+            assert_eq!(false, Value::UInt8(u8::MIN).is_float32());
+            assert_eq!(false, Value::UInt16(u16::MIN).is_float32());
+            assert_eq!(false, Value::UInt32(u32::MIN).is_float32());
+            assert_eq!(false, Value::UInt64(u64::MIN).is_float32());
+            assert_eq!(false, Value::UInt128(u128::MIN).is_float32());
+
+            assert_eq!(true, Value::Float32(f32::MIN).is_float32()); // <-- This one is the only "true" test.
+            assert_eq!(false, Value::Float64(f64::MIN).is_float32());
+
+            assert_eq!(
+                false,
+                Value::NaiveDate(NaiveDate::from_ymd_opt(2023, 1, 1).unwrap()).is_float32()
+            );
+            assert_eq!(
+                false,
+                Value::NaiveDateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                )
+                .is_float32()
+            );
+            assert_eq!(
+                false,
+                Value::DateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                        .and_local_timezone(FixedOffset::east_opt(0).unwrap())
+                        .unwrap()
+                )
+                .is_float32()
+            );
+
+            assert_eq!(false, Value::Char('a').is_float32());
+            assert_eq!(false, Value::Bool(true).is_float32());
+            assert_eq!(false, Value::String(String::from("string")).is_float32());
+            assert_eq!(
+                false,
+                Value::Decimal(Decimal::from_f32(1.1).unwrap()).is_float32()
+            );
+        }
+
+        #[test]
+        pub fn is_type_float64() {
+            assert_eq!(false, Value::Int8(i8::MIN).is_float64());
+            assert_eq!(false, Value::Int16(i16::MIN).is_float64());
+            assert_eq!(false, Value::Int32(i32::MIN).is_float64());
+            assert_eq!(false, Value::Int64(i64::MIN).is_float64());
+            assert_eq!(false, Value::Int128(i128::MIN).is_float64());
+
+            assert_eq!(false, Value::UInt8(u8::MIN).is_float64());
+            assert_eq!(false, Value::UInt16(u16::MIN).is_float64());
+            assert_eq!(false, Value::UInt32(u32::MIN).is_float64());
+            assert_eq!(false, Value::UInt64(u64::MIN).is_float64());
+            assert_eq!(false, Value::UInt128(u128::MIN).is_float64());
+
+            assert_eq!(false, Value::Float32(f32::MIN).is_float64());
+            assert_eq!(true, Value::Float64(f64::MIN).is_float64()); // <-- This one is the only "true" test.
+
+            assert_eq!(
+                false,
+                Value::NaiveDate(NaiveDate::from_ymd_opt(2023, 1, 1).unwrap()).is_float64()
+            );
+            assert_eq!(
+                false,
+                Value::NaiveDateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                )
+                .is_float64()
+            );
+            assert_eq!(
+                false,
+                Value::DateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                        .and_local_timezone(FixedOffset::east_opt(0).unwrap())
+                        .unwrap()
+                )
+                .is_float64()
+            );
+
+            assert_eq!(false, Value::Char('a').is_float64());
+            assert_eq!(false, Value::Bool(true).is_float64());
+            assert_eq!(false, Value::String(String::from("string")).is_float64());
+            assert_eq!(
+                false,
+                Value::Decimal(Decimal::from_f32(1.1).unwrap()).is_float64()
+            );
+        }
+
+        #[test]
+        pub fn is_type_naive_date() {
+            assert_eq!(false, Value::Int8(i8::MIN).is_naive_date());
+            assert_eq!(false, Value::Int16(i16::MIN).is_naive_date());
+            assert_eq!(false, Value::Int32(i32::MIN).is_naive_date());
+            assert_eq!(false, Value::Int64(i64::MIN).is_naive_date());
+            assert_eq!(false, Value::Int128(i128::MIN).is_naive_date());
+
+            assert_eq!(false, Value::UInt8(u8::MIN).is_naive_date());
+            assert_eq!(false, Value::UInt16(u16::MIN).is_naive_date());
+            assert_eq!(false, Value::UInt32(u32::MIN).is_naive_date());
+            assert_eq!(false, Value::UInt64(u64::MIN).is_naive_date());
+            assert_eq!(false, Value::UInt128(u128::MIN).is_naive_date());
+
+            assert_eq!(false, Value::Float32(f32::MIN).is_naive_date());
+            assert_eq!(false, Value::Float64(f64::MIN).is_naive_date());
+
+            assert_eq!(
+                true,
+                Value::NaiveDate(NaiveDate::from_ymd_opt(2023, 1, 1).unwrap()).is_naive_date() // <-- This one is the only "true" test.
+            );
+            assert_eq!(
+                false,
+                Value::NaiveDateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                )
+                .is_naive_date()
+            );
+            assert_eq!(
+                false,
+                Value::DateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                        .and_local_timezone(FixedOffset::east_opt(0).unwrap())
+                        .unwrap()
+                )
+                .is_naive_date()
+            );
+
+            assert_eq!(false, Value::Char('a').is_naive_date());
+            assert_eq!(false, Value::Bool(true).is_naive_date());
+            assert_eq!(false, Value::String(String::from("string")).is_naive_date());
+            assert_eq!(
+                false,
+                Value::Decimal(Decimal::from_f32(1.1).unwrap()).is_naive_date()
+            );
+        }
+
+        #[test]
+        pub fn is_type_naive_date_time() {
+            assert_eq!(false, Value::Int8(i8::MIN).is_naive_date_time());
+            assert_eq!(false, Value::Int16(i16::MIN).is_naive_date_time());
+            assert_eq!(false, Value::Int32(i32::MIN).is_naive_date_time());
+            assert_eq!(false, Value::Int64(i64::MIN).is_naive_date_time());
+            assert_eq!(false, Value::Int128(i128::MIN).is_naive_date_time());
+
+            assert_eq!(false, Value::UInt8(u8::MIN).is_naive_date_time());
+            assert_eq!(false, Value::UInt16(u16::MIN).is_naive_date_time());
+            assert_eq!(false, Value::UInt32(u32::MIN).is_naive_date_time());
+            assert_eq!(false, Value::UInt64(u64::MIN).is_naive_date_time());
+            assert_eq!(false, Value::UInt128(u128::MIN).is_naive_date_time());
+
+            assert_eq!(false, Value::Float32(f32::MIN).is_naive_date_time());
+            assert_eq!(false, Value::Float64(f64::MIN).is_naive_date_time());
+
+            assert_eq!(
+                false,
+                Value::NaiveDate(NaiveDate::from_ymd_opt(2023, 1, 1).unwrap()).is_naive_date_time()
+            );
+
+            // This one is the only "true" test.
+            assert_eq!(
+                true,
+                Value::NaiveDateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                )
+                .is_naive_date_time()
+            );
+            assert_eq!(
+                false,
+                Value::DateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                        .and_local_timezone(FixedOffset::east_opt(0).unwrap())
+                        .unwrap()
+                )
+                .is_naive_date_time()
+            );
+
+            assert_eq!(false, Value::Char('a').is_naive_date_time());
+            assert_eq!(false, Value::Bool(true).is_naive_date_time());
+            assert_eq!(
+                false,
+                Value::String(String::from("string")).is_naive_date_time()
+            );
+            assert_eq!(
+                false,
+                Value::Decimal(Decimal::from_f32(1.1).unwrap()).is_naive_date_time()
+            );
+        }
+
+        #[test]
+        pub fn is_type_date_time() {
+            assert_eq!(false, Value::Int8(i8::MIN).is_date_time());
+            assert_eq!(false, Value::Int16(i16::MIN).is_date_time());
+            assert_eq!(false, Value::Int32(i32::MIN).is_date_time());
+            assert_eq!(false, Value::Int64(i64::MIN).is_date_time());
+            assert_eq!(false, Value::Int128(i128::MIN).is_date_time());
+
+            assert_eq!(false, Value::UInt8(u8::MIN).is_date_time());
+            assert_eq!(false, Value::UInt16(u16::MIN).is_date_time());
+            assert_eq!(false, Value::UInt32(u32::MIN).is_date_time());
+            assert_eq!(false, Value::UInt64(u64::MIN).is_date_time());
+            assert_eq!(false, Value::UInt128(u128::MIN).is_date_time());
+
+            assert_eq!(false, Value::Float32(f32::MIN).is_date_time());
+            assert_eq!(false, Value::Float64(f64::MIN).is_date_time());
+
+            assert_eq!(
+                false,
+                Value::NaiveDate(NaiveDate::from_ymd_opt(2023, 1, 1).unwrap()).is_date_time()
+            );
+
+            assert_eq!(
+                false,
+                Value::NaiveDateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                )
+                .is_date_time()
+            );
+
+            // This one is the only "true" test.
+            assert_eq!(
+                true,
+                Value::DateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                        .and_local_timezone(FixedOffset::east_opt(0).unwrap())
+                        .unwrap()
+                )
+                .is_date_time()
+            );
+
+            assert_eq!(false, Value::Char('a').is_date_time());
+            assert_eq!(false, Value::Bool(true).is_date_time());
+            assert_eq!(false, Value::String(String::from("string")).is_date_time());
+            assert_eq!(
+                false,
+                Value::Decimal(Decimal::from_f32(1.1).unwrap()).is_date_time()
+            );
+        }
+
+        #[test]
+        pub fn is_type_char() {
+            assert_eq!(false, Value::Int8(i8::MIN).is_char());
+            assert_eq!(false, Value::Int16(i16::MIN).is_char());
+            assert_eq!(false, Value::Int32(i32::MIN).is_char());
+            assert_eq!(false, Value::Int64(i64::MIN).is_char());
+            assert_eq!(false, Value::Int128(i128::MIN).is_char());
+
+            assert_eq!(false, Value::UInt8(u8::MIN).is_char());
+            assert_eq!(false, Value::UInt16(u16::MIN).is_char());
+            assert_eq!(false, Value::UInt32(u32::MIN).is_char());
+            assert_eq!(false, Value::UInt64(u64::MIN).is_char());
+            assert_eq!(false, Value::UInt128(u128::MIN).is_char());
+
+            assert_eq!(false, Value::Float32(f32::MIN).is_char());
+            assert_eq!(false, Value::Float64(f64::MIN).is_char());
+
+            assert_eq!(
+                false,
+                Value::NaiveDate(NaiveDate::from_ymd_opt(2023, 1, 1).unwrap()).is_char()
+            );
+
+            assert_eq!(
+                false,
+                Value::NaiveDateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                )
+                .is_char()
+            );
+            assert_eq!(
+                false,
+                Value::DateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                        .and_local_timezone(FixedOffset::east_opt(0).unwrap())
+                        .unwrap()
+                )
+                .is_char()
+            );
+
+            assert_eq!(true, Value::Char('a').is_char()); // <-- This one is the only "true" test.
+            assert_eq!(false, Value::Bool(true).is_char());
+            assert_eq!(false, Value::String(String::from("string")).is_char());
+            assert_eq!(
+                false,
+                Value::Decimal(Decimal::from_f32(1.1).unwrap()).is_char()
+            );
+        }
+
+        #[test]
+        pub fn is_type_bool() {
+            assert_eq!(false, Value::Int8(i8::MIN).is_bool());
+            assert_eq!(false, Value::Int16(i16::MIN).is_bool());
+            assert_eq!(false, Value::Int32(i32::MIN).is_bool());
+            assert_eq!(false, Value::Int64(i64::MIN).is_bool());
+            assert_eq!(false, Value::Int128(i128::MIN).is_bool());
+
+            assert_eq!(false, Value::UInt8(u8::MIN).is_bool());
+            assert_eq!(false, Value::UInt16(u16::MIN).is_bool());
+            assert_eq!(false, Value::UInt32(u32::MIN).is_bool());
+            assert_eq!(false, Value::UInt64(u64::MIN).is_bool());
+            assert_eq!(false, Value::UInt128(u128::MIN).is_bool());
+
+            assert_eq!(false, Value::Float32(f32::MIN).is_bool());
+            assert_eq!(false, Value::Float64(f64::MIN).is_bool());
+
+            assert_eq!(
+                false,
+                Value::NaiveDate(NaiveDate::from_ymd_opt(2023, 1, 1).unwrap()).is_bool()
+            );
+
+            assert_eq!(
+                false,
+                Value::NaiveDateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                )
+                .is_bool()
+            );
+
+            assert_eq!(
+                false,
+                Value::DateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                        .and_local_timezone(FixedOffset::east_opt(0).unwrap())
+                        .unwrap()
+                )
+                .is_bool()
+            );
+
+            assert_eq!(false, Value::Char('a').is_bool());
+            assert_eq!(true, Value::Bool(true).is_bool()); // <-- This one is the only "true" test.
+            assert_eq!(false, Value::String(String::from("string")).is_bool());
+            assert_eq!(
+                false,
+                Value::Decimal(Decimal::from_f32(1.1).unwrap()).is_bool()
+            );
+        }
+
+        #[test]
+        pub fn is_type_string() {
+            assert_eq!(false, Value::Int8(i8::MIN).is_string());
+            assert_eq!(false, Value::Int16(i16::MIN).is_string());
+            assert_eq!(false, Value::Int32(i32::MIN).is_string());
+            assert_eq!(false, Value::Int64(i64::MIN).is_string());
+            assert_eq!(false, Value::Int128(i128::MIN).is_string());
+
+            assert_eq!(false, Value::UInt8(u8::MIN).is_string());
+            assert_eq!(false, Value::UInt16(u16::MIN).is_string());
+            assert_eq!(false, Value::UInt32(u32::MIN).is_string());
+            assert_eq!(false, Value::UInt64(u64::MIN).is_string());
+            assert_eq!(false, Value::UInt128(u128::MIN).is_string());
+
+            assert_eq!(false, Value::Float32(f32::MIN).is_string());
+            assert_eq!(false, Value::Float64(f64::MIN).is_string());
+
+            assert_eq!(
+                false,
+                Value::NaiveDate(NaiveDate::from_ymd_opt(2023, 1, 1).unwrap()).is_string()
+            );
+
+            assert_eq!(
+                false,
+                Value::NaiveDateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                )
+                .is_string()
+            );
+
+            assert_eq!(
+                false,
+                Value::DateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                        .and_local_timezone(FixedOffset::east_opt(0).unwrap())
+                        .unwrap()
+                )
+                .is_string()
+            );
+
+            assert_eq!(false, Value::Char('a').is_string());
+            assert_eq!(false, Value::Bool(true).is_string());
+            assert_eq!(true, Value::String(String::from("string")).is_string()); // <-- This one is the only "true" test.
+            assert_eq!(
+                false,
+                Value::Decimal(Decimal::from_f32(1.1).unwrap()).is_string()
+            );
+        }
+
+        #[test]
+        pub fn is_type_decimal() {
+            assert_eq!(false, Value::Int8(i8::MIN).is_decimal());
+            assert_eq!(false, Value::Int16(i16::MIN).is_decimal());
+            assert_eq!(false, Value::Int32(i32::MIN).is_decimal());
+            assert_eq!(false, Value::Int64(i64::MIN).is_decimal());
+            assert_eq!(false, Value::Int128(i128::MIN).is_decimal());
+
+            assert_eq!(false, Value::UInt8(u8::MIN).is_decimal());
+            assert_eq!(false, Value::UInt16(u16::MIN).is_decimal());
+            assert_eq!(false, Value::UInt32(u32::MIN).is_decimal());
+            assert_eq!(false, Value::UInt64(u64::MIN).is_decimal());
+            assert_eq!(false, Value::UInt128(u128::MIN).is_decimal());
+
+            assert_eq!(false, Value::Float32(f32::MIN).is_decimal());
+            assert_eq!(false, Value::Float64(f64::MIN).is_decimal());
+
+            assert_eq!(
+                false,
+                Value::NaiveDate(NaiveDate::from_ymd_opt(2023, 1, 1).unwrap()).is_decimal()
+            );
+
+            assert_eq!(
+                false,
+                Value::NaiveDateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                )
+                .is_decimal()
+            );
+
+            assert_eq!(
+                false,
+                Value::DateTime(
+                    NaiveDate::from_ymd_opt(2023, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(12, 0, 0)
+                        .unwrap()
+                        .and_local_timezone(FixedOffset::east_opt(0).unwrap())
+                        .unwrap()
+                )
+                .is_decimal()
+            );
+
+            assert_eq!(false, Value::Char('a').is_decimal());
+            assert_eq!(false, Value::Bool(true).is_decimal());
+            assert_eq!(false, Value::String(String::from("string")).is_decimal());
+            assert_eq!(
+                true,
+                Value::Decimal(Decimal::from_f32(1.1).unwrap()).is_decimal() // <-- This one is the only "true" test.
+            );
+        }
     }
 
     mod conversions {
@@ -1597,7 +2948,9 @@ mod tests {
                 "%d.%m.%Y",
             );
             assert_eq!(
-                Ok(Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31))),
+                Ok(Value::NaiveDate(
+                    NaiveDate::from_ymd_opt(2022, 12, 31).unwrap()
+                )),
                 test
             );
         }
