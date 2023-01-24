@@ -1,6 +1,6 @@
 [package]
 name = "venum"
-version = "0.1.0"
+version = "0.1.1"
 description = "venum is a small lib/crate that essentially just one enum type that can be used for 'dynamic typing'. It's much like serde's Value enum for example, but with lot's of functions to parse and convert between enum variants."
 authors = ["Joerg Sischka <sischcode@gmx.net>"]
 readme = "README.md"
@@ -8,7 +8,7 @@ repository = "https://github.com/sischcode/venum"
 keywords = ["venum", "value", "value-type", "enum", "dynamic typing", "serialization", "deserialization", "parsing"]
 categories = ["encoding", "parsing"]
 license = "Apache-2.0"
-license-file = "LICENSE"
+# license-file = "LICENSE"
 edition = "2021"
 rust-version = "1.62"
 include = ["/src", "README.md", "LICENSE"]

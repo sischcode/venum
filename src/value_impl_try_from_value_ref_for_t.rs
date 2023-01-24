@@ -82,8 +82,6 @@ impl TryFrom<&Value> for String {
 
 #[cfg(test)]
 mod tests {
-    use chrono::TimeZone;
-
     use super::*;
 
     #[test]
@@ -126,20 +124,33 @@ mod tests {
         );
 
         assert_eq!(
-            NaiveDate::from_ymd(2022, 12, 31),
-            NaiveDate::try_from(&Value::NaiveDate(NaiveDate::from_ymd(2022, 12, 31))).unwrap()
+            NaiveDate::from_ymd_opt(2022, 12, 31).unwrap(),
+            NaiveDate::try_from(&Value::NaiveDate(
+                NaiveDate::from_ymd_opt(2022, 12, 31).unwrap()
+            ))
+            .unwrap()
         );
         assert_eq!(
-            NaiveDate::from_ymd(2022, 12, 31).and_hms(12, 00, 00),
+            NaiveDate::from_ymd_opt(2022, 12, 31)
+                .unwrap()
+                .and_hms_opt(12, 00, 00)
+                .unwrap(),
             NaiveDateTime::try_from(&Value::NaiveDateTime(
-                NaiveDate::from_ymd(2022, 12, 31).and_hms(12, 00, 00)
+                NaiveDate::from_ymd_opt(2022, 12, 31)
+                    .unwrap()
+                    .and_hms_opt(12, 00, 00)
+                    .unwrap()
             ))
             .unwrap()
         );
 
-        let dt: DateTime<FixedOffset> = FixedOffset::east(5 * 3600) // east = +; west = -
-            .ymd(2022, 12, 31)
-            .and_hms(6, 0, 0);
+        let dt = NaiveDate::from_ymd_opt(2022, 12, 31)
+            .unwrap() // This date exists for sure. Unwrap is safe here
+            .and_hms_milli_opt(6, 0, 0, 0)
+            .unwrap() // This time exists for sure. Unwrap is safe here
+            .and_local_timezone(FixedOffset::east_opt(5 * 3600).unwrap()) // east = +; west = -
+            .unwrap(); // This timezone (UTC) exists for sure. Unwrap is safe here
+
         assert_eq!(dt, DateTime::try_from(&Value::DateTime(dt)).unwrap());
     }
 }
