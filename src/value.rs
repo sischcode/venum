@@ -1458,7 +1458,7 @@ mod tests {
                 .and_local_timezone(FixedOffset::east_opt(2 * hour_secs).unwrap())
                 .unwrap();
 
-            let date_str = "Tue, 01 Jul 2003 10:52:37 +0200";
+            let date_str = "Tue, 1 Jul 2003 10:52:37 +0200";
             let res = Value::parse_date_time_from_str_rfc2822(date_str);
             assert_eq!(Ok(Value::DateTime(exp)), res);
 
